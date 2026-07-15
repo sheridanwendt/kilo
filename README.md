@@ -2,7 +2,7 @@
 
 A self-hosted, local-first personal agent built on [Hermes Agent](https://github.com/NousResearch/hermes-agent) (NousResearch, MIT). This repo is an **overlay** on top of upstream Hermes: it doesn't fork the agent's source, it pins an upstream version and layers profile-specific config, install automation, and custom skills on top.
 
-Full design doc: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Full design doc: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Trackable step-by-step checklist: [`PROJECT_PLAN.md`](./PROJECT_PLAN.md).
 
 ## What this gives you
 
