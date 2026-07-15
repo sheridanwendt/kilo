@@ -1,0 +1,33 @@
+# Optional docker-compose overlay for the `cloud-server` profile.
+# Use alongside upstream's docker-compose.yml:
+#   docker compose -f docker-compose.yml -f overlay/docker/docker-compose.override.yml up -d
+#
+# Adds: a co-located Ollama container so "local-first" still holds true
+# inside a container deployment, not just bare-metal.
+version: "3.8"
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+
+  hermes-agent:
+    # Point Hermes at the sibling Ollama container instead of localhost.
+    # TODO (Project Plan step 13): confirm whether this is best set via an
+    # env var or by mounting a config.yaml with base_url: http://ollama:11434/v1
+    # — verify against the container's actual config-loading behavior.
+    environment:
+      - HPA_OLLAMA_BASE_URL=http://ollama:11434/v1
+    depends_on:
+      - ollama
+
+volumes:
+  ollama-data:

@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Installs Ollama as the default, offline, free local model provider.
+# Enables it as a systemd service (starts at boot) and pre-pulls a baseline
+# model so the very first boot works with zero network access.
+set -euo pipefail
+
+HPA_LOCAL_MODEL="${HPA_LOCAL_MODEL:-qwen2.5:14b}"
+HPA_OLLAMA_CONTEXT_LENGTH="${HPA_OLLAMA_CONTEXT_LENGTH:-65536}"  # Hermes requires >=64k context
+
+if ! command -v ollama >/dev/null 2>&1; then
+  echo "  - Installing Ollama..."
+  curl -fsSL https://ollama.com/install.sh | sh
+else
+  echo "  - Ollama already installed ($(ollama --version 2>/dev/null || echo 'version unknown'))"
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+  echo "  - Enabling ollama.service at boot"
+  sudo systemctl enable --now ollama
+
+  # Make sure Ollama exposes enough context for Hermes's tool-calling needs.
+  # Ollama truncates context by default; override it explicitly.
+  echo "  - Setting OLLAMA_CONTEXT_LENGTH=${HPA_OLLAMA_CONTEXT_LENGTH} via systemd drop-in"
+  sudo mkdir -p /etc/systemd/system/ollama.service.d
+  cat <<EOF | sudo tee /etc/systemd/system/ollama.service.d/override.conf >/dev/null
+[Service]
+Environment="OLLAMA_CONTEXT_LENGTH=${HPA_OLLAMA_CONTEXT_LENGTH}"
+EOF
+  sudo systemctl daemon-reload
+  sudo systemctl restart ollama
+else
+  echo "  - No systemd on this host (macOS?). Start Ollama manually or via 'brew services start ollama'."
+fi
+
+echo "  - Waiting for Ollama API to come up..."
+for i in $(seq 1 30); do
+  if curl -fsS http://localhost:11434/api/version >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
+echo "  - Pulling local model: ${HPA_LOCAL_MODEL} (override with HPA_LOCAL_MODEL for your hardware)"
+ollama pull "${HPA_LOCAL_MODEL}"
+
+echo "  - Ollama ready at http://localhost:11434/v1 (no API key, fully offline)."

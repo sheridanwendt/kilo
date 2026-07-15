@@ -1,0 +1,12 @@
+# Profile: usb-offline (Ventoy bootable USB, assume no network at first boot).
+# Deep-merged on top of default.yaml.
+#
+# Messaging platforms (Telegram, Slack, etc.) all require internet, so this
+# profile starts with CLI only. Once you've connected the USB machine to wifi
+# and want a messaging platform, add it manually with `hermes gateway setup`.
+gateway:
+  platforms: ["cli"]
+
+# Smaller default model recommended here since USB target hardware is unknown
+# and may lack a GPU. Override at install time, e.g.:
+#   HPA_LOCAL_MODEL=qwen2.5:7b ./install.sh --profile usb-offline

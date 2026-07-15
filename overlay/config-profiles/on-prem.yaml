@@ -1,0 +1,7 @@
+# Profile: on-prem (default profile — your own always-on Ubuntu box/VM).
+# Deep-merged on top of default.yaml; only overrides/additions go here.
+#
+# NOTE: verify `gateway.platforms` key name against `hermes gateway setup`
+# (Project Plan step 10) — placeholder pending that interactive confirmation.
+gateway:
+  platforms: ["telegram", "cli"]

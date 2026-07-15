@@ -1,0 +1,14 @@
+# Never commit secrets or local state.
+.env
+*.env
+.hermes/
+*.bak.*
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# USB image build artifacts (large binaries, build locally, don't commit)
+overlay/iso-usb/*.img
+overlay/iso-usb/*.iso
+overlay/iso-usb/build/

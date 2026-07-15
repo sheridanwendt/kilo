@@ -1,0 +1,9 @@
+# Profile: cloud-server (VPS/cloud instance, headless, Docker-first).
+# Deep-merged on top of default.yaml.
+#
+# Note: local Ollama still applies here (see default.yaml) — if your VPS has
+# no GPU, either pick a small enough model to run on CPU, or override
+# HPA_LOCAL_MODEL at install time to something CPU-friendly, e.g.:
+#   HPA_LOCAL_MODEL=qwen2.5:7b ./install.sh --profile cloud-server
+gateway:
+  platforms: ["telegram", "slack", "cli"]
