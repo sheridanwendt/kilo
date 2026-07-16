@@ -15,7 +15,7 @@ Full design doc: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 ## Quick start
 
 ```bash
-git clone https://github.com/<your-username>/hermes-personal-assistant.git
+git clone https://github.com/sheridanwendt/kilo.git
 cd hermes-personal-assistant
 ./install.sh --profile on-prem
 ```
