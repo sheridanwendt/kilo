@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # hermes-personal-assistant — single-command installer.
 #
-#   git clone https://github.com/<you>/hermes-personal-assistant.git
+#   git clone https://github.com/sheridanwendt/kilo.git
 #   cd hermes-personal-assistant
 #   ./install.sh --profile on-prem
 #
