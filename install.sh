@@ -68,7 +68,20 @@ ensure_core_tools() {
   echo "==> Bootstrapping missing core tools before anything else: ${missing[*]}"
   if command -v apt-get >/dev/null 2>&1; then
     echo "  - Running apt-get update (output below; can take a moment on a fresh machine)"
-    sudo apt-get update
+    local APT_UPDATE_LOG
+    APT_UPDATE_LOG="$(mktemp)"
+    trap 'rm -f "$APT_UPDATE_LOG"' RETURN
+    if ! sudo apt-get update 2>&1 | tee "$APT_UPDATE_LOG"; then
+      :
+    fi
+    if grep -qE "Network is unreachable|Could not connect|Could not resolve|Connection timed out" "$APT_UPDATE_LOG"; then
+      # Common on networks/hosts with a broken or absent IPv6 route: apt tries
+      # the IPv6 addresses Canonical's mirror redirector hands out first, those
+      # time out/fail, and it never gets to a working IPv4 address on its own.
+      echo "  ! apt-get update hit network errors (looks like a broken/absent IPv6" >&2
+      echo "    route to Ubuntu's mirrors). Retrying with IPv4 forced..." >&2
+      sudo apt-get update -o Acquire::ForceIPv4=true
+    fi
     echo "  - Installing: ${missing[*]} ca-certificates"
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}" ca-certificates
   else
