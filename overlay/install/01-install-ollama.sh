@@ -4,10 +4,41 @@
 # model so the very first boot works with zero network access.
 set -euo pipefail
 
-HPA_LOCAL_MODEL="${HPA_LOCAL_MODEL:-qwen2.5:14b}"
 HPA_OLLAMA_CONTEXT_LENGTH="${HPA_OLLAMA_CONTEXT_LENGTH:-65536}"  # Hermes requires >=64k context
 
+# Model size is a deliberately adjustable placeholder (see CLAUDE.md
+# "Performance priorities"): prefer a smaller model on RAM-constrained
+# hardware over forcing one size everywhere. An explicit HPA_LOCAL_MODEL
+# always wins; only auto-pick when the caller hasn't set one.
+if [[ -z "${HPA_LOCAL_MODEL:-}" ]]; then
+  MEM_GB=0
+  if command -v free >/dev/null 2>&1; then
+    MEM_GB=$(( $(free -m | awk '/^Mem:/{print $2}') / 1024 ))
+  fi
+  if [[ "$MEM_GB" -gt 0 && "$MEM_GB" -lt 8 ]]; then
+    HPA_LOCAL_MODEL="qwen2.5:7b"
+    echo "  - Detected ~${MEM_GB}GB RAM; auto-selecting a smaller model: ${HPA_LOCAL_MODEL}" \
+         "(override with HPA_LOCAL_MODEL=... if you want a different one)"
+  else
+    HPA_LOCAL_MODEL="qwen2.5:14b"
+  fi
+fi
+
+NEED_OLLAMA_INSTALL=false
 if ! command -v ollama >/dev/null 2>&1; then
+  NEED_OLLAMA_INSTALL=true
+elif command -v systemctl >/dev/null 2>&1 && ! systemctl cat ollama.service >/dev/null 2>&1; then
+  # The `ollama` binary exists but there's no ollama.service unit anywhere in
+  # systemd's search path (checked via `systemctl cat`, which works
+  # regardless of which of the several standard unit directories it lives
+  # in) — a partial/manual install left the binary without the service the
+  # rest of this script depends on. The official installer is safe to
+  # re-run and will (re)create the missing unit.
+  echo "  - ollama binary found but no ollama.service systemd unit; re-running installer to fix"
+  NEED_OLLAMA_INSTALL=true
+fi
+
+if [[ "$NEED_OLLAMA_INSTALL" == true ]]; then
   echo "  - Installing Ollama..."
   curl -fsSL https://ollama.com/install.sh | sh
 else

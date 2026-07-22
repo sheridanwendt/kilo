@@ -50,9 +50,9 @@ echo "  - Prereqs ready (${DISTRO})."
 if command -v free >/dev/null 2>&1; then
   MEM_GB=$(( $(free -m | awk '/^Mem:/{print $2}') / 1024 ))
   if [[ "$MEM_GB" -lt 8 ]]; then
-    echo "  ! Warning: ~${MEM_GB}GB RAM detected. The default local model" >&2
-    echo "    (qwen2.5:14b) typically wants 8-10GB+ free to run well." >&2
-    echo "    Consider: HPA_LOCAL_MODEL=qwen2.5:7b ./install.sh ..." >&2
+    echo "  ! Warning: ~${MEM_GB}GB RAM detected. Step 2 will auto-select a" >&2
+    echo "    smaller local model (qwen2.5:7b) instead of the 14b default." >&2
+    echo "    Override with HPA_LOCAL_MODEL=... if you want a specific model." >&2
   fi
 fi
 if command -v df >/dev/null 2>&1; then
