@@ -3,7 +3,7 @@
 ## Cloud VM or on-prem Ubuntu box (bare metal)
 
 1. Fresh Ubuntu install (22.04+ recommended).
-2. `git clone https://github.com/<you>/hermes-personal-assistant.git && cd hermes-personal-assistant`
+2. `git clone https://github.com/sheridanwendt/kilo.git && cd kilo`
 3. `./install.sh --profile cloud-server` (or `on-prem`)
 4. Verify: `systemctl status ollama hermes-gateway`, then `hermes` to chat.
 5. If restoring from a backup, see "Memory restore" below before step 4.

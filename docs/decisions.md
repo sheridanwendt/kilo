@@ -474,3 +474,91 @@ for the authoritative current layout.
 alignment note.
 
 **Future implications**: None.
+
+---
+
+## ADR-0013: Stale-checkout self-detection guard in `install.sh`, plus a regression fix
+
+**Decision**: `install.sh` now runs two guards before doing any real work:
+(1) an inline `ensure_core_tools` check that installs `curl`/`git` via apt if
+either is missing, redundant with but independent of
+`overlay/install/00-install-prereqs.sh`; (2) a `check_for_stale_checkout`
+guard that fetches `origin/main` and, if the local checkout is a strict
+ancestor of it (i.e., genuinely behind, not just diverged), prints a clear
+explanation and exits rather than proceeding with old code.
+
+**Context**: The owner ran the previous commit's `install.sh` on real
+hardware (`kilo@stick`) and hit `curl: command not found` — but not because
+the fix from ADR-0012 was wrong. `git clone` had failed silently (target
+directory already existed, non-empty, from an earlier attempt) and `cd kilo`
+dropped into that stale, pre-fix checkout. The owner asked for `install.sh`
+itself to be hardened against this class of mistake recurring.
+
+**A real limitation, found while validating this fix**: `sheridanwendt/kilo`
+is a **private** repository. An anonymous `git fetch` against a private repo
+fails immediately with an auth error (`could not read Username for
+'https://github.com': No such device or address`) rather than a clean
+network-timeout signal. The guard treats any fetch failure as "can't check,
+proceed anyway" (fail open, not fail closed — an installer should not hard-
+block on a network hiccup). **Practical consequence: this guard only
+actually engages on a machine that has git credentials cached for this repo**
+(SSH key, `gh auth login`, or a stored credential helper entry) or if the
+repo is later made public. On a machine with no such credentials, the
+checkout-staleness check silently no-ops every time — safe, but not the
+strong guarantee it might first appear to be. This is called out explicitly
+in the script's own comments and here, rather than left for someone to
+discover the hard way.
+
+**Alternatives considered**: Make the fetch failure fatal (block install
+entirely if staleness can't be verified) — rejected, since it would brick
+the install for the very common case of no cached git credentials, which is
+worse than the problem being solved. Require the repo to be public —
+rejected as out of scope for this ADR (repo visibility is the owner's call,
+not something to change as a side effect of an installer robustness fix).
+Skip the guard entirely and rely on documentation alone (e.g., README
+instructions for a clone-or-pull one-liner) — rejected as insufficient on
+its own, since the whole point is that people (understandably) don't always
+follow the README's fine print; a self-check in the code that runs
+regardless of which instructions were followed is a stronger guarantee than
+documentation alone, even with the credentials caveat.
+
+**Also fixed as part of this same pass (regression, not new work)**: while
+validating this fix, a comparison against the actually-pushed commit
+revealed that `install.sh`'s header comment had regressed back to the
+placeholder clone URL (`<you>/hermes-personal-assistant.git`) instead of
+the real one (`sheridanwendt/kilo.git`) — a leftover from an earlier merge
+(see ADR-0011/the "Merge remote README/install.sh URL fixes" commit) that
+didn't get carried forward correctly when a later commit was assembled by
+copying files from one working copy into another. The same stale placeholder
+was also found, never having been fixed at all, in
+`overlay/docs/runbook.md` and `overlay/iso-usb/README.md`. All three are
+corrected in this commit.
+
+**A tooling note for whoever works on this repo next in a similar
+assistant-driven environment**: while making this fix, the assistant's own
+sandbox exhibited a caching bug where a file (`install.sh`) that had already
+been read via shell commands earlier in the session stopped picking up
+subsequent content changes made through the assistant's file-editing tool,
+even though the tool reported success — while files not yet read via the
+shell picked up changes immediately. The workaround was writing to a new,
+never-before-read filename and copying that into place for the actual git
+commit. This is an environment quirk of that assistant session, not a
+property of this repository or its scripts, but is recorded here in case a
+similar discrepancy (edits that don't seem to "take" when inspected via
+shell, despite a successful-looking edit) recurs in a future session.
+
+**Consequences**: `install.sh` is now more defensive in two independent ways
+(core-tool bootstrap, staleness detection), plus a real regression is fixed.
+Verified: `bash -n` syntax check on all scripts, and the staleness-detection
+core logic (`merge-base --is-ancestor` comparison) validated against a
+throwaway local git repo with two synthetic commits standing in for
+local/remote state, confirming both the "correctly flags a stale checkout"
+and "correctly does not flag an up-to-date checkout" cases. **Not yet
+validated**: an actual end-to-end run of the fetch path against the real
+`sheridanwendt/kilo` remote with real cached credentials — that still
+belongs to Phase 1 real-hardware testing.
+
+**Future implications**: If the owner ever makes this repo public, the
+staleness guard becomes unconditionally effective for anyone (no
+credentials needed for anonymous fetch of a public repo), which is a
+straightforward improvement with no action needed on the script's part.

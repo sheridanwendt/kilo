@@ -16,8 +16,8 @@ directory as `build-image.sh` once validated manually once):
    model's disk footprint, e.g. 40GB+ for a 14B model plus Hermes + logs).
 4. From that persistent session, run the normal install flow:
    ```bash
-   git clone https://github.com/<you>/hermes-personal-assistant.git
-   cd hermes-personal-assistant
+   git clone https://github.com/sheridanwendt/kilo.git
+   cd kilo
    ./install.sh --profile usb-offline
    ```
 5. Confirm `systemctl status ollama hermes-gateway` are both enabled and

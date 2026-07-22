@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# hermes-personal-assistant — single-command installer.
+# hermes-personal-assistant - single-command installer.
 #
-#   git clone https://github.com/<you>/hermes-personal-assistant.git
-#   cd hermes-personal-assistant
+#   git clone https://github.com/sheridanwendt/kilo.git
+#   cd kilo
 #   ./install.sh --profile on-prem
+#
+# If ./kilo already exists from a previous attempt, `git clone` above will
+# fail (harmlessly) and `cd kilo` will drop you into whatever old code is
+# already there. To always get the current version:
+#
+#   git clone https://github.com/sheridanwendt/kilo.git kilo 2>/dev/null || (cd kilo && git pull origin main)
+#   cd kilo && ./install.sh --profile on-prem
 #
 # Installs baseline OS prerequisites, Ollama (default, offline, free),
 # installs upstream Hermes Agent, applies a config profile, and registers
@@ -18,6 +25,7 @@ INSTALL_DIR="$OVERLAY_DIR/install"
 PROFILE="on-prem"
 UPDATE_ONLY=false
 SKIP_AUTOSTART=false
+SKIP_UPDATE_CHECK="${HPA_SKIP_UPDATE_CHECK:-0}"
 
 usage() {
   cat <<'EOF'
@@ -28,6 +36,10 @@ Usage: ./install.sh [--profile <on-prem|cloud-server|usb-offline>] [--update] [-
   --skip-autostart   Don't register systemd boot services (useful for USB image builds
                       where autostart is configured differently, or for manual testing)
   -h, --help         Show this help
+
+Env vars:
+  HPA_SKIP_UPDATE_CHECK=1   Skip the "is this checkout stale" check below (e.g. for an
+                            intentionally offline USB build with no network access)
 EOF
 }
 
@@ -40,6 +52,85 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
   esac
 done
+
+# --- Guard 1: make sure the bare minimum tools this very script needs exist. ---
+# Belt-and-suspenders alongside overlay/install/00-install-prereqs.sh (which
+# installs the full prereq list as its own numbered step): this inline
+# check guarantees curl and git specifically are present before we even
+# get to the update-staleness check below, which needs git to work.
+ensure_core_tools() {
+  local missing=()
+  command -v curl >/dev/null 2>&1 || missing+=(curl)
+  command -v git  >/dev/null 2>&1 || missing+=(git)
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    return 0
+  fi
+  echo "==> Bootstrapping missing core tools before anything else: ${missing[*]}"
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo apt-get update -qq
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${missing[@]}" ca-certificates
+  else
+    echo "  ! No apt-get available and missing: ${missing[*]}. Install these manually," >&2
+    echo "    then re-run ./install.sh." >&2
+    exit 1
+  fi
+}
+ensure_core_tools
+
+# --- Guard 2: catch a stale checkout before it causes a confusing error further in. ---
+# This is exactly the failure mode that prompted this guard: git clone
+# silently no-ops against a non-empty directory left over from a previous
+# attempt, so an old install.sh (missing later fixes) runs instead and
+# fails deep inside a sub-script with something like "curl: command not
+# found" - which is confusing to debug because the real problem is that
+# old code is running, not the error you actually see.
+check_for_stale_checkout() {
+  if [[ "$SKIP_UPDATE_CHECK" == "1" ]]; then
+    return 0
+  fi
+  if ! git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local local_head remote_head
+  local_head="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+
+  if ! git -C "$SCRIPT_DIR" fetch --quiet origin main 2>/dev/null; then
+    # Fails silently (by design) if offline, or if this is a private repo
+    # and no git credentials are cached on this machine (SSH key, `gh auth
+    # login`, or a credential helper) -- an anonymous fetch against a
+    # private repo errors out rather than just timing out, and we treat
+    # that the same as "can't check" rather than blocking the install.
+    echo "  (couldn't fetch origin/main - offline, or no git credentials" \
+         "cached for a private repo - skipping stale-checkout check)"
+    return 0
+  fi
+  remote_head="$(git -C "$SCRIPT_DIR" rev-parse origin/main 2>/dev/null || true)"
+
+  if [[ -n "$local_head" && -n "$remote_head" && "$local_head" != "$remote_head" ]] \
+     && git -C "$SCRIPT_DIR" merge-base --is-ancestor "$local_head" "$remote_head" 2>/dev/null; then
+    echo "==============================================================" >&2
+    echo " This checkout is behind origin/main - stop before it fails" >&2
+    echo " confusingly a few steps in." >&2
+    echo "" >&2
+    echo "   local:  ${local_head}" >&2
+    echo "   origin: ${remote_head}" >&2
+    echo "" >&2
+    echo " Fix:" >&2
+    echo "   git -C \"$SCRIPT_DIR\" pull origin main" >&2
+    echo "   $SCRIPT_DIR/install.sh --profile $PROFILE" >&2
+    echo "" >&2
+    echo " This is the exact stale-directory-from-a-previous-attempt" >&2
+    echo " scenario: git clone silently no-ops against a non-empty" >&2
+    echo " directory, leaving old code in place." >&2
+    echo "" >&2
+    echo " To proceed anyway (e.g. intentionally offline USB build):" >&2
+    echo "   HPA_SKIP_UPDATE_CHECK=1 $SCRIPT_DIR/install.sh --profile $PROFILE" >&2
+    echo "==============================================================" >&2
+    exit 1
+  fi
+}
+check_for_stale_checkout
 
 PROFILE_FILE="$OVERLAY_DIR/config-profiles/${PROFILE}.yaml"
 if [[ ! -f "$PROFILE_FILE" ]]; then
