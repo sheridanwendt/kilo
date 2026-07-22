@@ -79,23 +79,34 @@ else
   echo " still not responding after 30s, continuing anyway."
 fi
 
-echo "  - Pulling local model: ${HPA_LOCAL_MODEL} (override with HPA_LOCAL_MODEL for your hardware)"
-# Model pulls can be several GB over a slow/flaky connection on a fresh
-# machine; retry a few times rather than failing the whole install on one
-# transient network error.
-PULL_OK=false
-for attempt in 1 2 3; do
-  if ollama pull "${HPA_LOCAL_MODEL}"; then
-    PULL_OK=true
-    break
+# `ollama pull` re-checks the registry manifest over the network even when
+# the model is already fully cached locally — a needless round trip (and a
+# needless network dependency) on every re-install once the model is
+# already there. Skip it entirely if it's already present. This assumes
+# HPA_LOCAL_MODEL always carries an explicit tag (the defaults above do;
+# so should any override), since `ollama list` prints the tag Ollama
+# actually stored it under.
+if ollama list 2>/dev/null | awk 'NR>1{print $1}' | grep -qxF "${HPA_LOCAL_MODEL}"; then
+  echo "  - Model already present locally: ${HPA_LOCAL_MODEL}, skipping pull"
+else
+  echo "  - Pulling local model: ${HPA_LOCAL_MODEL} (override with HPA_LOCAL_MODEL for your hardware)"
+  # Model pulls can be several GB over a slow/flaky connection on a fresh
+  # machine; retry a few times rather than failing the whole install on one
+  # transient network error.
+  PULL_OK=false
+  for attempt in 1 2 3; do
+    if ollama pull "${HPA_LOCAL_MODEL}"; then
+      PULL_OK=true
+      break
+    fi
+    echo "  ! Model pull attempt ${attempt}/3 failed, retrying..." >&2
+    sleep 5
+  done
+  if [[ "$PULL_OK" != true ]]; then
+    echo "  ! Failed to pull ${HPA_LOCAL_MODEL} after 3 attempts. Check network/disk" >&2
+    echo "    space, then retry manually with: ollama pull ${HPA_LOCAL_MODEL}" >&2
+    exit 1
   fi
-  echo "  ! Model pull attempt ${attempt}/3 failed, retrying..." >&2
-  sleep 5
-done
-if [[ "$PULL_OK" != true ]]; then
-  echo "  ! Failed to pull ${HPA_LOCAL_MODEL} after 3 attempts. Check network/disk" >&2
-  echo "    space, then retry manually with: ollama pull ${HPA_LOCAL_MODEL}" >&2
-  exit 1
 fi
 
 echo "  - Ollama ready at http://localhost:11434/v1 (no API key, fully offline)."
