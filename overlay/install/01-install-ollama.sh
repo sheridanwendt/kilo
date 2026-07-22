@@ -7,7 +7,21 @@ set -euo pipefail
 HPA_LOCAL_MODEL="${HPA_LOCAL_MODEL:-qwen2.5:14b}"
 HPA_OLLAMA_CONTEXT_LENGTH="${HPA_OLLAMA_CONTEXT_LENGTH:-65536}"  # Hermes requires >=64k context
 
+NEED_OLLAMA_INSTALL=false
 if ! command -v ollama >/dev/null 2>&1; then
+  NEED_OLLAMA_INSTALL=true
+elif command -v systemctl >/dev/null 2>&1 && ! systemctl cat ollama.service >/dev/null 2>&1; then
+  # The `ollama` binary exists but there's no ollama.service unit anywhere in
+  # systemd's search path (checked via `systemctl cat`, which works
+  # regardless of which of the several standard unit directories it lives
+  # in) — a partial/manual install left the binary without the service the
+  # rest of this script depends on. The official installer is safe to
+  # re-run and will (re)create the missing unit.
+  echo "  - ollama binary found but no ollama.service systemd unit; re-running installer to fix"
+  NEED_OLLAMA_INSTALL=true
+fi
+
+if [[ "$NEED_OLLAMA_INSTALL" == true ]]; then
   echo "  - Installing Ollama..."
   curl -fsSL https://ollama.com/install.sh | sh
 else
