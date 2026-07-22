@@ -67,8 +67,10 @@ ensure_core_tools() {
   fi
   echo "==> Bootstrapping missing core tools before anything else: ${missing[*]}"
   if command -v apt-get >/dev/null 2>&1; then
-    sudo apt-get update -qq
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${missing[@]}" ca-certificates
+    echo "  - Running apt-get update (output below; can take a moment on a fresh machine)"
+    sudo apt-get update
+    echo "  - Installing: ${missing[*]} ca-certificates"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}" ca-certificates
   else
     echo "  ! No apt-get available and missing: ${missing[*]}. Install these manually," >&2
     echo "    then re-run ./install.sh." >&2

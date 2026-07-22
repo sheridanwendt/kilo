@@ -17,11 +17,11 @@ if ! command -v apt-get >/dev/null 2>&1; then
   exit 0
 fi
 
-echo "  - Updating apt package index"
-sudo apt-get update -qq
+echo "  - Updating apt package index (output below; can take a moment on a fresh machine)"
+sudo apt-get update
 
 echo "  - Installing baseline packages (curl, git, python3 + pip/venv/yaml)"
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   curl \
   ca-certificates \
   git \

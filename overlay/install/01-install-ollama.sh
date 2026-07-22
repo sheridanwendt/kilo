@@ -32,13 +32,21 @@ else
   echo "  - No systemd on this host (macOS?). Start Ollama manually or via 'brew services start ollama'."
 fi
 
-echo "  - Waiting for Ollama API to come up..."
+echo -n "  - Waiting for Ollama API to come up"
+OLLAMA_UP=false
 for i in $(seq 1 30); do
   if curl -fsS http://localhost:11434/api/version >/dev/null 2>&1; then
+    OLLAMA_UP=true
     break
   fi
+  echo -n "."
   sleep 1
 done
+if [[ "$OLLAMA_UP" == true ]]; then
+  echo " ready."
+else
+  echo " still not responding after 30s, continuing anyway."
+fi
 
 echo "  - Pulling local model: ${HPA_LOCAL_MODEL} (override with HPA_LOCAL_MODEL for your hardware)"
 # Model pulls can be several GB over a slow/flaky connection on a fresh
