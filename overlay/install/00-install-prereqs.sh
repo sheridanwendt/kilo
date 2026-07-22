@@ -9,6 +9,9 @@
 # 03-apply-profile.sh can all fail on a truly clean machine.
 set -euo pipefail
 
+# shellcheck source=overlay/install/lib-apt-ipv4-fallback.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib-apt-ipv4-fallback.sh"
+
 if ! command -v apt-get >/dev/null 2>&1; then
   echo "  ! No apt-get on this host (not Debian/Ubuntu?). Skipping automatic" >&2
   echo "    prereq install — make sure curl, ca-certificates, git, python3," >&2
@@ -17,11 +20,11 @@ if ! command -v apt-get >/dev/null 2>&1; then
   exit 0
 fi
 
-echo "  - Updating apt package index"
-sudo apt-get update -qq
+echo "  - Updating apt package index (output below; can take a moment on a fresh machine)"
+hpa_apt_update_with_ipv4_fallback
 
 echo "  - Installing baseline packages (curl, git, python3 + pip/venv/yaml)"
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   curl \
   ca-certificates \
   git \
