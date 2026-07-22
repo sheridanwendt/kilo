@@ -13,6 +13,10 @@ the Hermes config schema is external and partly unconfirmed (see
 ./install.sh [--profile <on-prem|cloud-server|usb-offline>] [--update] [--skip-autostart]
 ```
 
+Five steps as of ADR-0012 (was four): `00-install-prereqs.sh` runs first,
+before Ollama, to guarantee `curl`/`git`/`python3`/pip exist even on a
+minimal fresh Ubuntu install.
+
 | Flag | Default | Effect |
 |---|---|---|
 | `--profile <name>` | `on-prem` | Selects `overlay/config-profiles/<name>.yaml`. Fails with a listing of valid profiles if the file doesn't exist. |
@@ -138,7 +142,4 @@ runtime with that config is upstream's responsibility.
 - **GitHub**: none stored; see ADR-0010 for the one-time PAT precedent if
   push access is needed again.
 - **Cloud LLM providers**: credentials expected in `~/.hermes/.env`,
-  populated manually by the operator (not automated by this repo — see
-  `docs/security.md`).
-- **This repo's scripts themselves**: require local `sudo` on the target
-  machine for systemd operations; no remote auth of any kind.
+  populated manually by the operator (not automated by 

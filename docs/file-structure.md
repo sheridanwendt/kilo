@@ -36,10 +36,11 @@ kilo/                                    (repo root)
     │   ├── cloud-server.yaml            VPS/cloud instance, headless, Docker-first
     │   └── usb-offline.yaml             Ventoy bootable USB, assume no network at first boot
     ├── install/                         Numbered, ordered install steps — called by install.sh
-    │   ├── 01-install-ollama.sh         Ollama install, systemd enable, context override, model pull
+    │   ├── 00-install-prereqs.sh        Baseline apt packages (curl, git, python3/pip/venv/yaml) + RAM/disk warnings
+    │   ├── 01-install-ollama.sh         Ollama install, systemd enable, context override, model pull (retried)
     │   ├── 02-install-hermes.sh         Upstream Hermes installer wrapper (+ --update mode)
-    │   ├── 03-apply-profile.sh          Python/PyYAML config deep-merge -> ~/.hermes/config.yaml
-    │   └── 04-enable-autostart.sh       systemd registration + ordering (Hermes after Ollama)
+    │   ├── 03-apply-profile.sh          Python/PyYAML config deep-merge -> ~/.hermes/config.yaml (pip-version-safe)
+    │   └── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
     ├── skills/
     │   └── custom/
     │       └── README.md                Describes instance-health + instance-provision skills (not yet built)
@@ -104,7 +105,4 @@ Based on `docs/implementation-plan.md` and `docs/backlog.md`:
   (ADR-0006) ends up needing distinct config rather than just a different
   base ISO
 - Test scripts/harness — none exist yet (see `docs/testing.md`); if added,
-  a `tests/` directory at the repo root would be the natural location,
-  not yet created
-- CI configuration (`.github/workflows/`) — does not exist yet; see
-  `docs/testing.md` for CI expectations once test infrastructure exists
+  a `tests/` directory at the repo root would be the natura

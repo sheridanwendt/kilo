@@ -17,8 +17,35 @@ import sys
 try:
     import yaml
 except ImportError:
+    # In the common case this branch never runs: 00-install-prereqs.sh
+    # installs the `python3-yaml` apt package first, which makes `import
+    # yaml` work with zero pip involvement. This is a fallback for hosts
+    # where that step was skipped (e.g. --skip-autostart-style manual runs,
+    # or a non-Debian host).
+    #
+    # pip's --break-system-packages flag only exists on pip >=23.0.1
+    # (roughly Ubuntu 24.04+). Passing it to an older pip (e.g. Ubuntu
+    # 22.04's default) errors out with "no such option" and would break
+    # this whole script. So: try a plain install first, and only add the
+    # flag if that specifically fails (which is what a PEP 668
+    # "externally-managed-environment" refusal looks like).
     import subprocess
-    subprocess.run([sys.executable, "-m", "pip", "install", "--break-system-packages", "--quiet", "pyyaml"], check=True)
+
+    def pip_install(extra_args):
+        return subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--quiet", *extra_args, "pyyaml"]
+        )
+
+    result = pip_install([])
+    if result.returncode != 0:
+        result = pip_install(["--break-system-packages"])
+    if result.returncode != 0:
+        sys.exit(
+            "Could not install PyYAML via pip on this system.\n"
+            "Fix manually, e.g.:\n"
+            "  sudo apt-get install -y python3-yaml\n"
+            "then re-run ./install.sh."
+        )
     import yaml
 
 default_path, profile_path, target_path = sys.argv[1:4]

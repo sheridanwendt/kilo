@@ -41,6 +41,22 @@ for i in $(seq 1 30); do
 done
 
 echo "  - Pulling local model: ${HPA_LOCAL_MODEL} (override with HPA_LOCAL_MODEL for your hardware)"
-ollama pull "${HPA_LOCAL_MODEL}"
+# Model pulls can be several GB over a slow/flaky connection on a fresh
+# machine; retry a few times rather than failing the whole install on one
+# transient network error.
+PULL_OK=false
+for attempt in 1 2 3; do
+  if ollama pull "${HPA_LOCAL_MODEL}"; then
+    PULL_OK=true
+    break
+  fi
+  echo "  ! Model pull attempt ${attempt}/3 failed, retrying..." >&2
+  sleep 5
+done
+if [[ "$PULL_OK" != true ]]; then
+  echo "  ! Failed to pull ${HPA_LOCAL_MODEL} after 3 attempts. Check network/disk" >&2
+  echo "    space, then retry manually with: ollama pull ${HPA_LOCAL_MODEL}" >&2
+  exit 1
+fi
 
 echo "  - Ollama ready at http://localhost:11434/v1 (no API key, fully offline)."

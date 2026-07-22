@@ -11,15 +11,31 @@ otherwise on an actual machine.
 - Repo scaffold: `README.md`, `CLAUDE.md`, `ARCHITECTURE.md`,
   `PROJECT_PLAN.md`, `.gitignore`.
 - `install.sh` — top-level entrypoint, argument parsing (`--profile`,
-  `--update`, `--skip-autostart`), calls the four numbered scripts in order.
+  `--update`, `--skip-autostart`), calls the five numbered scripts in order
+  (was four — see below).
+- `overlay/install/00-install-prereqs.sh` — **added in a robustness audit**
+  (ADR-0012): installs `curl`, `git`, `ca-certificates`, `python3`,
+  `python3-pip`, `python3-venv`, `python3-yaml` via apt, plus soft RAM/disk
+  warnings. Closes the "fresh Ubuntu has none of these" gap.
 - `overlay/install/01-install-ollama.sh` — Ollama install, systemd enable,
-  `OLLAMA_CONTEXT_LENGTH` override, model pull.
+  `OLLAMA_CONTEXT_LENGTH` override, model pull (now retried up to 3x on
+  failure — ADR-0012).
 - `overlay/install/02-install-hermes.sh` — upstream installer wrapper,
   `--update` mode.
 - `overlay/install/03-apply-profile.sh` — Python/PyYAML deep-merge of
-  config profiles into `~/.hermes/config.yaml`, with backup.
+  config profiles into `~/.hermes/config.yaml`, with backup. **Fixed**
+  (ADR-0012): no longer blindly passes `--break-system-packages` to pip,
+  which broke on Ubuntu 22.04's older pip; tries plain install first, and
+  in the common case doesn't need pip at all now that
+  `00-install-prereqs.sh` installs `python3-yaml` via apt.
 - `overlay/install/04-enable-autostart.sh` — `hermes gateway install
-  --system`, systemd ordering drop-in.
+  --system`, systemd ordering drop-in. **Fixed** (ADR-0012): two real bugs
+  — `sudo hermes ...` couldn't find the `hermes` binary (PATH reset under
+  sudo; upstream installs to user-space, not a root-visible path), and the
+  resulting system service would have run as `root` and read
+  `/root/.hermes` instead of the installing user's config. Both fixed by
+  resolving the binary path explicitly, preserving PATH under `sudo env`,
+  and pinning `User=`/`Group=`/`HOME=` in the systemd drop-in.
 - `overlay/config-profiles/default.yaml`, `on-prem.yaml`,
   `cloud-server.yaml`, `usb-offline.yaml`.
 - `overlay/docker/docker-compose.override.yml` — has an unresolved TODO
@@ -89,26 +105,4 @@ it.
   keys, `HPA_OLLAMA_BASE_URL`) — see `docs/open-questions.md` for the full
   list. These aren't bugs yet because nothing has been run, but they will
   need fixing in Phase 1/2.
-- No automated tests of any kind exist. See `docs/testing.md`.
-- `overlay/iso-usb/README.md` documents a fallback plan (per-drive
-  dd-flashed images) in case Ventoy persistence doesn't hold up across
-  hardware, but that fallback is not implemented, only described.
-
-## Known bugs
-
-None known — nothing has been executed, so no bugs have been observed yet.
-This section should start filling in during Phase 1.
-
-## Known limitations
-
-- Native Windows is out of scope entirely (ADR-0007) — this is a permanent
-  limitation inherited from upstream Hermes, not a temporary gap.
-- Purchase-making is deliberately absent (ADR-0002) — permanent until the
-  owner explicitly revisits it.
-- No multi-instance memory sync — each `~/.hermes/` is fully independent
-  per machine; there's no mechanism (yet, or planned for v1) to share
-  learned skills/memory between, say, a home server instance and a laptop
-  instance. See `docs/future-ideas.md`.
-- Single-user design throughout — no multi-tenant, multi-user, or
-  permission-separation concepts anywhere in this repo or in how Hermes
-  itself is being configured.
+- No automated tests of any k

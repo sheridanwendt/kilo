@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # hermes-personal-assistant — single-command installer.
 #
-#   git clone https://github.com/sheridanwendt/kilo.git
-#   cd kilo
+#   git clone https://github.com/<you>/hermes-personal-assistant.git
+#   cd hermes-personal-assistant
 #   ./install.sh --profile on-prem
 #
-# Installs Ollama (default, offline, free), installs upstream Hermes Agent,
-# applies a config profile, and registers boot-time systemd services.
+# Installs baseline OS prerequisites, Ollama (default, offline, free),
+# installs upstream Hermes Agent, applies a config profile, and registers
+# boot-time systemd services. Designed to work on a genuinely fresh Ubuntu
+# install with zero pre-installed dependencies.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -60,20 +62,23 @@ if [[ "$UPDATE_ONLY" == true ]]; then
   exit 0
 fi
 
-echo "==> Step 1/4: Installing Ollama (default local model provider)"
+echo "==> Step 1/5: Installing baseline OS prerequisites"
+bash "$INSTALL_DIR/00-install-prereqs.sh"
+
+echo "==> Step 2/5: Installing Ollama (default local model provider)"
 bash "$INSTALL_DIR/01-install-ollama.sh"
 
-echo "==> Step 2/4: Installing Hermes Agent (upstream)"
+echo "==> Step 3/5: Installing Hermes Agent (upstream)"
 bash "$INSTALL_DIR/02-install-hermes.sh"
 
-echo "==> Step 3/4: Applying profile '$PROFILE'"
+echo "==> Step 4/5: Applying profile '$PROFILE'"
 bash "$INSTALL_DIR/03-apply-profile.sh"
 
 if [[ "$SKIP_AUTOSTART" == false ]]; then
-  echo "==> Step 4/4: Registering boot-time autostart"
+  echo "==> Step 5/5: Registering boot-time autostart"
   bash "$INSTALL_DIR/04-enable-autostart.sh"
 else
-  echo "==> Step 4/4: Skipped (--skip-autostart)"
+  echo "==> Step 5/5: Skipped (--skip-autostart)"
 fi
 
 echo "==> Done. Run 'hermes' to chat, or check 'systemctl status hermes-gateway ollama' for the running services."

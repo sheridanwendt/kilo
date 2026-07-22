@@ -113,13 +113,19 @@ this diagram: `docs/decisions.md`.
 ## Current state (short version)
 
 Steps 1-3 of the 21-step project plan are done: the repo scaffold exists,
-config profiles are defined, and `install.sh` is written. **Nothing has been
-executed on real hardware yet** — no step from 4 onward has been validated.
-Several config keys (`gateway.platforms`, the exact `model:` schema, a
-docker-compose env var) are best-effort based on documentation research, not
-confirmed against a live `hermes model` / `hermes gateway setup` run, and are
-flagged inline with `TODO` comments. Full detail, including everything that
-is known to be unverified: `docs/current-state.md` and
+config profiles are defined, and `install.sh` is written. A subsequent
+production-readiness audit (`docs/decisions.md` ADR-0012) found and fixed
+four real defects that would have broken a fresh-Ubuntu install (missing
+baseline packages, a pip version incompatibility, and a `sudo`/PATH bug
+that would have made the boot-time service silently read the wrong config)
+— `install.sh` is now five steps instead of four. **Still, nothing has been
+executed on real hardware yet** — no step from 4 onward in `PROJECT_PLAN.md`
+has been validated, and this audit found logic bugs, not the separate
+category of unconfirmed config-schema assumptions. Several config keys
+(`gateway.platforms`, the exact `model:` schema, a docker-compose env var)
+remain best-effort based on documentation research, not confirmed against a
+live `hermes model` / `hermes gateway setup` run, and are flagged inline
+with `TODO` comments. Full detail: `docs/current-state.md` and
 `docs/open-questions.md`.
 
 ## Next milestones
@@ -163,13 +169,4 @@ See `overlay/config-profiles/` for the other profiles (`cloud-server`,
 | `docs/testing.md` | Testing philosophy and what "done" means for each plan step. |
 | `docs/security.md` | Threat model, secrets handling, purchase-deferral rationale. |
 | `docs/backlog.md` | Prioritized remaining work with acceptance criteria. |
-| `docs/open-questions.md` | Everything not yet confirmed against a real Hermes instance. |
-| `docs/future-ideas.md` | Enhancements discussed but out of scope for v1. |
-
-## License / upstream
-
-This repo is MIT (matching upstream Hermes Agent). Upstream project:
-https://github.com/NousResearch/hermes-agent. This repo does not vendor
-upstream's source — see `docs/decisions.md` ADR-0003 for why, and the
-important caveat about that decision diverging from the originally-stated
-"fork + overlay" repo strategy.
+| `docs/open-questions.md` | Everything not yet confirmed against a real H
