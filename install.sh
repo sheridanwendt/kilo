@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # hermes-personal-assistant — single-command installer.
 #
-#   git clone https://github.com/<you>/hermes-personal-assistant.git
-#   cd hermes-personal-assistant
+#   git clone https://github.com/sheridanwendt/kilo.git
+#   cd kilo
 #   ./install.sh --profile on-prem
 #
 # Installs Ollama (default, offline, free), installs upstream Hermes Agent,
