@@ -9,6 +9,9 @@
 # 03-apply-profile.sh can all fail on a truly clean machine.
 set -euo pipefail
 
+# shellcheck source=overlay/install/lib-apt-ipv4-fallback.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib-apt-ipv4-fallback.sh"
+
 if ! command -v apt-get >/dev/null 2>&1; then
   echo "  ! No apt-get on this host (not Debian/Ubuntu?). Skipping automatic" >&2
   echo "    prereq install — make sure curl, ca-certificates, git, python3," >&2
@@ -18,20 +21,7 @@ if ! command -v apt-get >/dev/null 2>&1; then
 fi
 
 echo "  - Updating apt package index (output below; can take a moment on a fresh machine)"
-APT_UPDATE_LOG="$(mktemp)"
-trap 'rm -f "$APT_UPDATE_LOG"' EXIT
-if ! sudo apt-get update 2>&1 | tee "$APT_UPDATE_LOG"; then
-  :
-fi
-if grep -qE "Network is unreachable|Could not connect|Could not resolve|Connection timed out" "$APT_UPDATE_LOG"; then
-  # Common on networks/hosts with a broken or absent IPv6 route: apt tries
-  # the IPv6 addresses Canonical's mirror redirector hands out first, those
-  # time out/fail, and it never gets to a working IPv4 address on its own.
-  # Retrying with IPv4 forced is the standard fix.
-  echo "  ! apt-get update hit network errors (looks like a broken/absent IPv6" >&2
-  echo "    route to Ubuntu's mirrors). Retrying with IPv4 forced..." >&2
-  sudo apt-get update -o Acquire::ForceIPv4=true
-fi
+hpa_apt_update_with_ipv4_fallback
 
 echo "  - Installing baseline packages (curl, git, python3 + pip/venv/yaml)"
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
