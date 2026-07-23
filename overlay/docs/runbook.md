@@ -41,6 +41,27 @@ Keep backups off the machine itself (encrypted, on separate storage) —
 `~/.hermes` may contain OAuth refresh tokens for any cloud providers you've
 configured.
 
+## Ollama: always manage via systemd, never run/kill the binary by hand
+
+`01-install-ollama.sh` pins `OLLAMA_MODELS=/usr/share/ollama/.ollama/models`
+via a systemd drop-in specifically so the model storage path is
+deterministic. If you manually kill the `ollama` process and then start it
+yourself (`ollama serve`) instead of `sudo systemctl restart ollama`, the
+new process runs as your own user and defaults to `~/.ollama/models` — a
+different, empty directory. `ollama ls` will then show no models, looking
+exactly like data loss, even though the real (multi-GB) blobs are untouched
+under the systemd-managed path above.
+
+If this happens: don't re-pull. First check whether the real data is still
+there and get the systemd-managed process back in control:
+
+```bash
+sudo systemctl status ollama                                # confirm it's not systemd already
+sudo du -sh /usr/share/ollama/.ollama/models                # confirm the old blobs are still there
+sudo systemctl restart ollama                                # let systemd (not you) own the process
+ollama ls                                                     # models should reappear immediately
+```
+
 ## Known gaps to account for during recovery
 
 - Native Windows install is experimental upstream; always recover via WSL2.

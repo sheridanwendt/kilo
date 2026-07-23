@@ -6,6 +6,17 @@ set -euo pipefail
 
 HPA_OLLAMA_CONTEXT_LENGTH="${HPA_OLLAMA_CONTEXT_LENGTH:-65536}"  # Hermes requires >=64k context
 
+# Where Ollama stores pulled model blobs. Pinned explicitly (rather than left
+# to Ollama's implicit default) so it's deterministic regardless of *how*
+# ollama.service ends up running. Without this, `ollama serve` launched
+# directly by a human (e.g. after manually killing the process instead of
+# `sudo systemctl restart ollama`) defaults to that user's own
+# ~/.ollama/models — a different, empty directory from the one the systemd
+# service (running as the `ollama` system user) actually pulled into. That
+# looks exactly like "my models got erased" in `ollama ls`, even though the
+# original blobs are untouched at the path below.
+HPA_OLLAMA_MODELS_DIR="${HPA_OLLAMA_MODELS_DIR:-/usr/share/ollama/.ollama/models}"
+
 # Model size is a deliberately adjustable placeholder (see CLAUDE.md
 # "Performance priorities"): prefer a smaller model on RAM-constrained
 # hardware over forcing one size everywhere. An explicit HPA_LOCAL_MODEL
@@ -50,12 +61,15 @@ if command -v systemctl >/dev/null 2>&1; then
   sudo systemctl enable --now ollama
 
   # Make sure Ollama exposes enough context for Hermes's tool-calling needs.
-  # Ollama truncates context by default; override it explicitly.
-  echo "  - Setting OLLAMA_CONTEXT_LENGTH=${HPA_OLLAMA_CONTEXT_LENGTH} via systemd drop-in"
+  # Ollama truncates context by default; override it explicitly. Also pin
+  # OLLAMA_MODELS explicitly (see comment above HPA_OLLAMA_MODELS_DIR) so the
+  # storage path is deterministic no matter how the process gets (re)started.
+  echo "  - Setting OLLAMA_CONTEXT_LENGTH=${HPA_OLLAMA_CONTEXT_LENGTH}, OLLAMA_MODELS=${HPA_OLLAMA_MODELS_DIR} via systemd drop-in"
   sudo mkdir -p /etc/systemd/system/ollama.service.d
   cat <<EOF | sudo tee /etc/systemd/system/ollama.service.d/override.conf >/dev/null
 [Service]
 Environment="OLLAMA_CONTEXT_LENGTH=${HPA_OLLAMA_CONTEXT_LENGTH}"
+Environment="OLLAMA_MODELS=${HPA_OLLAMA_MODELS_DIR}"
 EOF
   sudo systemctl daemon-reload
   sudo systemctl restart ollama
