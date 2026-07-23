@@ -38,5 +38,11 @@ directly (or via a PR) as you go.
 
 ## Currently in progress
 
-Step 4 (local model online) — see open question in chat about Ubuntu Desktop
-vs Server for the target box, which affects how this and step 11 get tested.
+Step 4 (local model online) — real progress on Sheridan's on-prem box
+("stick"): install.sh runs end to end (Ollama installed/enabled, model
+pulled, profile applied with a confirmed-correct `model:`/`gateway:`
+schema — see `docs/open-questions.md` items 1-2, now resolved), but the
+agent failed to initialize on a context-window mismatch, fixed in
+`default.yaml` (`model.context_length`) — not yet re-verified after that
+fix, and offline tool-calling (this step's acceptance criterion) is still
+unconfirmed. Not checking the box until both are actually verified.

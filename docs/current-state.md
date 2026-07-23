@@ -56,11 +56,18 @@ otherwise on an actual machine.
 
 - **Provider policy**: the *design* (local-first default, cloud manual-only,
   no fallback) is fully specified and reflected in
-  `overlay/config-profiles/default.yaml`'s comments and structure, but the
-  actual `model:`/`custom_providers:` YAML keys used are a best-effort
-  guess based on documentation research (see `docs/open-questions.md`), not
-  confirmed against a real `hermes model` wizard run. **This is the single
-  highest-risk unverified assumption in the repo.**
+  `overlay/config-profiles/default.yaml`'s comments and structure. **Update
+  (2026-07-23)**: first real run on Sheridan's on-prem box ("stick") —
+  `docs/open-questions.md` items 1 and 2 are now resolved: both the
+  `model:` schema and `gateway.platforms` schema were confirmed correct by
+  diffing the live-generated `~/.hermes/config.yaml` against what
+  `03-apply-profile.sh` writes (byte-for-byte match). One real gap did
+  surface: the agent refused to initialize with a context-window error
+  (`OLLAMA_CONTEXT_LENGTH`'s systemd override isn't reflected in Ollama's
+  model-info metadata that Hermes checks against its 64k minimum). Fixed
+  by adding `model.context_length: 65536` to `default.yaml`, per Hermes's
+  own error-message guidance — not yet re-verified end-to-end on real
+  hardware after the fix.
 - **Docker deployment**: `docker-compose.override.yml` exists and expresses
   the intent (sidecar Ollama container, local-first even in containers),
   but the mechanism for pointing the Hermes container at the sidecar

@@ -6,11 +6,11 @@ these during Phase 1 (`docs/implementation-plan.md`) and move each item to
 "Resolved" with the answer once confirmed — don't delete the question, keep
 the record of what was uncertain and what turned out to be true.
 
-## Unresolved
+## Resolved
 
-### 1. Exact `model:` / `custom_providers:` schema for local Ollama
+### 1. Exact `model:` / `custom_providers:` schema for local Ollama — RESOLVED
 
-`overlay/config-profiles/default.yaml` currently sets:
+`overlay/config-profiles/default.yaml` set:
 
 ```yaml
 model:
@@ -19,17 +19,31 @@ model:
   default: "qwen2.5:14b"
 ```
 
-This is based on documentation references to a `/model custom:qwen-2.5`
-switch syntax and a general description of the "Custom Endpoint flow," not
-a confirmed `hermes model`-generated file. It's also unclear whether local
-Ollama should instead be defined as a named entry under a top-level
-`custom_providers:` list (which upstream docs show for *other* custom
-endpoints, e.g. a corporate GPU server) rather than inline under `model:`.
-**Action**: run `hermes model` interactively, choose the custom-endpoint
-path pointed at `http://localhost:11434/v1`, and diff the resulting
-`~/.hermes/config.yaml` against this file.
+based on documentation references, not a confirmed `hermes`-generated
+file. **Resolved 2026-07-23**, real run on Sheridan's on-prem box
+"stick": after running `install.sh --profile on-prem` end to end and
+letting Hermes's own first-run flow complete, `cat ~/.hermes/config.yaml`
+came back byte-for-byte identical (for the `model:` block) to what
+`03-apply-profile.sh` had already written — Hermes didn't rewrite or add
+to it. Confirmed correct as-is; the `custom_providers:` alternative this
+question originally worried about is not needed.
 
-### 2. Exact `gateway.platforms` schema
+One real gap this run did surface: initializing the agent failed with a
+context-window error (32,768 tokens reported vs. Hermes's 64k minimum),
+even with `OLLAMA_CONTEXT_LENGTH=65536` already set via the systemd
+drop-in — Ollama's model-info endpoint reports the model's default
+Modelfile context, not the actual runtime serving window, and Hermes
+checks the former. Hermes's own error text named the fix: a
+`context_length` key alongside `default:` under `model:`. Added to
+`default.yaml`.
+
+Still open: whether the interactive wizard (`hermes setup`, distinct from
+just running `hermes`) writes anything beyond `config.yaml` — e.g. the
+agent's name ("kilo" in Sheridan's session) wasn't present anywhere in
+`config.yaml`, so it's either a hardcoded Hermes default or lives in
+separate state. Not investigated further since it isn't blocking.
+
+### 2. Exact `gateway.platforms` schema — RESOLVED
 
 `overlay/config-profiles/on-prem.yaml`, `cloud-server.yaml`, and
 `usb-offline.yaml` all use:
@@ -39,10 +53,12 @@ gateway:
   platforms: ["telegram", "cli"]
 ```
 
-This key name and structure is a placeholder invented to express intent
-("which messaging platforms should this profile enable"), not sourced from
-a confirmed upstream schema reference. **Action**: run `hermes gateway
-setup` interactively and inspect the resulting config structure.
+invented as a placeholder, not sourced from a confirmed schema reference.
+**Resolved 2026-07-23**: confirmed via the same real run as #1 above —
+`~/.hermes/config.yaml`'s `gateway:` block matched this exactly, key name
+and structure both. No changes needed.
+
+## Unresolved
 
 ### 3. Docker↔Ollama networking mechanism
 
@@ -134,8 +150,8 @@ until then this is a theoretical concern, not yet exercised.
 
 | # | Assumption | Where used | Risk if wrong |
 |---|---|---|---|
-| 1 | `model:` schema for local Ollama | `default.yaml` | High — core provider policy depends on this |
-| 2 | `gateway.platforms` schema | all profile YAMLs | Medium — blocks messaging gateway, not core function |
+| 1 | `model:` schema for local Ollama | `default.yaml` | **Resolved** — confirmed against real run 2026-07-23 |
+| 2 | `gateway.platforms` schema | all profile YAMLs | **Resolved** — confirmed against real run 2026-07-23 |
 | 3 | Docker env var mechanism | `docker-compose.override.yml` | Medium — blocks Docker path only |
 | 4 | `ollama.service` unit name | `04-enable-autostart.sh` | Medium — boot ordering silently no-ops if wrong |
 | 5 | Upstream version pinning capability | `UPSTREAM_VERSION`, ADR-0003 | Low — affects reproducibility, not function |
