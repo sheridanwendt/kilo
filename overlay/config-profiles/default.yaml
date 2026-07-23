@@ -10,10 +10,21 @@
 # --- Default provider: local Ollama. Free, offline, no API key. ---
 # HPA_LOCAL_MODEL (set in overlay/install/01-install-ollama.sh) controls which
 # model gets pulled; keep this `default:` value in sync with that env var.
+#
+# context_length: Ollama's model-info endpoint reports a model's *default*
+# Modelfile context (32,768 for qwen2.5), not the actual runtime serving
+# window — that's controlled separately by OLLAMA_CONTEXT_LENGTH (set via
+# the systemd drop-in in 01-install-ollama.sh). Hermes checks the reported
+# metadata against its own 64k minimum and refuses to start without this
+# override, even though the server is actually serving at OLLAMA_CONTEXT_LENGTH's
+# larger window. Keep this in sync with HPA_OLLAMA_CONTEXT_LENGTH (also
+# 65536 by default) if you ever change one — see CLAUDE.md: never lower
+# either below 64k.
 model:
   provider: "custom"
   base_url: "http://localhost:11434/v1"
   default: "qwen2.5:14b"
+  context_length: 65536
 
 # --- Cloud providers: configured, never auto-selected. ---
 # Credentials for these live in ~/.hermes/.env (populated separately, NOT

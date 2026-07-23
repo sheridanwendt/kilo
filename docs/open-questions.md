@@ -29,6 +29,22 @@ endpoints, e.g. a corporate GPU server) rather than inline under `model:`.
 path pointed at `http://localhost:11434/v1`, and diff the resulting
 `~/.hermes/config.yaml` against this file.
 
+**Partial update (2026-07-23, real run on Sheridan's on-prem box
+"stick")**: the `provider`/`base_url`/`default` keys as written were
+accepted — Hermes got past config loading and attempted to initialize the
+model, so that much of the schema is confirmed correct, at least for this
+Hermes version. It then failed with a context-window error (agent refused
+to start with qwen2.5:14b, citing a 32,768-token window against a 64k
+minimum) whose own error text named the fix: a `context_length` key
+alongside `default:` under `model:`. Added to `default.yaml`. Still
+unconfirmed: whether `custom_providers:` is the more correct/idiomatic
+place for a local Ollama entry (this question's original crux), and
+whether the wizard's other prompts (agent name, gateway platform choice)
+write into `config.yaml` at all or into separate state — see the P0
+backlog item "Validate/fix the `config.yaml` provider schema against a
+real `hermes model` run" in `docs/backlog.md`; we don't yet have a full
+wizard-generated `config.yaml` to diff against.
+
 ### 2. Exact `gateway.platforms` schema
 
 `overlay/config-profiles/on-prem.yaml`, `cloud-server.yaml`, and
