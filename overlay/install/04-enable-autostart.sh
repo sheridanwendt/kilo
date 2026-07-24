@@ -38,7 +38,21 @@ INSTALL_GROUP="$(id -gn "$INSTALL_USER" 2>/dev/null || echo "$INSTALL_USER")"
 echo "  - Registering hermes-gateway as a system service (starts at boot, auto-restarts)"
 echo "  - Will run as user '$INSTALL_USER' (home: $INSTALL_HOME) so it reads that user's ~/.hermes"
 # Preserve PATH under sudo — see failure mode #1 above.
-sudo env "PATH=$PATH" "$HERMES_BIN" gateway install --system
+#
+# `hermes gateway install --system` interactively asks "Start the gateway
+# now?" and "Start automatically on boot?", both [Y/n] (Y default). No
+# documented flag to skip these (checked upstream docs/README; none
+# found), and this script wants Y to both anyway — it goes on to enable
+# and restart the service itself regardless. Feeding two "y" answers keeps
+# this a genuinely unattended install, per CLAUDE.md's "reinstallable from
+# scratch, one command" requirement.
+#
+# Deliberately `printf` here, not `yes`: with `set -o pipefail`, `yes`
+# reports a spurious pipeline failure (SIGPIPE, exit 141) the moment the
+# reader stops reading, even when the actual command succeeded — `printf`
+# writes its fixed input and exits 0 on its own, so the pipeline's exit
+# status genuinely reflects whether `hermes gateway install` succeeded.
+printf 'y\ny\n' | sudo env "PATH=$PATH" "$HERMES_BIN" gateway install --system
 
 echo "  - Pinning hermes-gateway to run as '$INSTALL_USER' + ordering it after ollama.service"
 sudo mkdir -p /etc/systemd/system/hermes-gateway.service.d
