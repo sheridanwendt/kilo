@@ -36,13 +36,16 @@ transactional rollback).
 
 | Variable | Default | Read by |
 |---|---|---|
-| `HPA_LOCAL_MODEL` | `qwen2.5:14b` | `01-install-ollama.sh` |
+| `HPA_LOCAL_MODEL` | `qwen3.5:9b` (was `qwen2.5:14b` until 2026-07-24 — see `docs/open-questions.md` #6) | `01-install-ollama.sh` |
 | `HPA_OLLAMA_CONTEXT_LENGTH` | `65536` | `01-install-ollama.sh` |
+| `HPA_OLLAMA_MODELS_DIR` | `/usr/share/ollama/.ollama/models` | `01-install-ollama.sh` |
 | `HPA_PROFILE` | (set by `install.sh`) | exported for sub-scripts, informational |
 | `HPA_PROFILE_FILE` | (set by `install.sh`) | `03-apply-profile.sh` |
 | `HPA_OVERLAY_DIR` | (set by `install.sh`) | `03-apply-profile.sh` |
 
-Example: `HPA_LOCAL_MODEL=qwen2.5:7b ./install.sh --profile usb-offline`.
+Example: `HPA_LOCAL_MODEL=some-other-model ./install.sh --profile usb-offline`
+— verify its native context length covers Hermes's 64k minimum first (see
+`docs/open-questions.md` #6).
 
 ## Sub-script contracts (`overlay/install/*.sh`)
 

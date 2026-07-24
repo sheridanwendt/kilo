@@ -41,8 +41,10 @@ directly (or via a PR) as you go.
 Step 4 (local model online) — real progress on Sheridan's on-prem box
 ("stick"): install.sh runs end to end (Ollama installed/enabled, model
 pulled, profile applied with a confirmed-correct `model:`/`gateway:`
-schema — see `docs/open-questions.md` items 1-2, now resolved), but the
-agent failed to initialize on a context-window mismatch, fixed in
-`default.yaml` (`model.context_length`) — not yet re-verified after that
-fix, and offline tool-calling (this step's acceptance criterion) is still
-unconfirmed. Not checking the box until both are actually verified.
+schema — see `docs/open-questions.md` items 1, 2, 6, now resolved). The
+original default model (`qwen2.5:14b`) turned out to have a hard native
+context ceiling below Hermes's requirement and was swapped for
+`qwen3.5:9b`, confirmed working on the same hardware. Not yet re-verified
+after this latest swap, and offline tool-calling (this step's acceptance
+criterion) is still unconfirmed. Not checking the box until both are
+actually verified.

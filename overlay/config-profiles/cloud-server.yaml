@@ -4,6 +4,10 @@
 # Note: local Ollama still applies here (see default.yaml) — if your VPS has
 # no GPU, either pick a small enough model to run on CPU, or override
 # HPA_LOCAL_MODEL at install time to something CPU-friendly, e.g.:
-#   HPA_LOCAL_MODEL=qwen2.5:7b ./install.sh --profile cloud-server
+#   HPA_LOCAL_MODEL=some-smaller-model ./install.sh --profile cloud-server
+# Verify its *native* context length actually covers Hermes's 64k minimum
+# first (see docs/open-questions.md #6) — qwen2.5's smaller sizes share
+# the 14b's 32,768-token native ceiling, so they wouldn't actually fix a
+# CPU-friendliness tradeoff without reintroducing that same problem.
 gateway:
   platforms: ["telegram", "slack", "cli"]

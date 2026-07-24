@@ -7,6 +7,10 @@
 gateway:
   platforms: ["cli"]
 
-# Smaller default model recommended here since USB target hardware is unknown
-# and may lack a GPU. Override at install time, e.g.:
-#   HPA_LOCAL_MODEL=qwen2.5:7b ./install.sh --profile usb-offline
+# A smaller override may be worth considering here since USB target hardware
+# is unknown and may lack a GPU, e.g.:
+#   HPA_LOCAL_MODEL=some-smaller-model ./install.sh --profile usb-offline
+# Whatever you pick, verify its *native* context length actually covers
+# Hermes's 64k minimum first (see docs/open-questions.md #6) — qwen2.5's
+# smaller sizes share the 14b's 32,768-token native ceiling, so they'd hit
+# the same wall qwen2.5:14b did, not a fix for constrained hardware.

@@ -11,19 +11,24 @@
 # HPA_LOCAL_MODEL (set in overlay/install/01-install-ollama.sh) controls which
 # model gets pulled; keep this `default:` value in sync with that env var.
 #
-# context_length: Ollama's model-info endpoint reports a model's *default*
-# Modelfile context (32,768 for qwen2.5), not the actual runtime serving
-# window — that's controlled separately by OLLAMA_CONTEXT_LENGTH (set via
-# the systemd drop-in in 01-install-ollama.sh). Hermes checks the reported
-# metadata against its own 64k minimum and refuses to start without this
-# override, even though the server is actually serving at OLLAMA_CONTEXT_LENGTH's
-# larger window. Keep this in sync with HPA_OLLAMA_CONTEXT_LENGTH (also
-# 65536 by default) if you ever change one — see CLAUDE.md: never lower
-# either below 64k.
+# Model history: qwen2.5:14b (the original default) turned out to have only
+# a 32,768-token *native* context — below Hermes's 64k minimum, and not
+# safely extensible without YaRN rope-scaling Hermes wasn't configured to
+# use (see docs/open-questions.md #6). Switched 2026-07-24 to qwen3.5:9b,
+# confirmed working end-to-end on real hardware: native context is
+# 262,144 tokens, comfortably covering the window below with no
+# extrapolation tricks involved.
+#
+# context_length: must match what OLLAMA_CONTEXT_LENGTH (systemd drop-in in
+# 01-install-ollama.sh, also 65536 by default) actually configures Ollama to
+# serve — Hermes checks this against its own 64k minimum, and separately
+# checks the model's actual loaded runtime context, so this value has to be
+# genuinely true, not just large enough to pass the first check. Keep both
+# in sync if you ever change one; never lower either below 64k (CLAUDE.md).
 model:
   provider: "custom"
   base_url: "http://localhost:11434/v1"
-  default: "qwen2.5:14b"
+  default: "qwen3.5:9b"
   context_length: 65536
 
 # --- Cloud providers: configured, never auto-selected. ---

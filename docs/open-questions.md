@@ -58,6 +58,28 @@ invented as a placeholder, not sourced from a confirmed schema reference.
 `~/.hermes/config.yaml`'s `gateway:` block matched this exactly, key name
 and structure both. No changes needed.
 
+### 6. Default local model choice — RESOLVED (was `qwen2.5:14b`, now `qwen3.5:9b`)
+
+`qwen2.5:14b` was chosen as a reasonable-sounding default balancing
+capability against resource requirements, not benchmarked on real
+hardware. **Resolved 2026-07-24, real run on "stick"**: it failed
+outright — Hermes refused to run it, since its native context is only
+32,768 tokens (confirmed via Qwen's own model card), below Hermes's 64k
+minimum, and not safely extensible without YaRN rope-scaling that Hermes
+wasn't configured to use. Setting `model.context_length` to satisfy
+Hermes's check without the runtime actually serving that window would
+have been reporting a context size the model doesn't genuinely support —
+correctly rejected as a path to take.
+
+Switched to `qwen3.5:9b`, confirmed working end-to-end on the same
+hardware (~7GB RAM). Its native context is 262,144 tokens, comfortably
+covering the 64k+ requirement with no extrapolation involved. This is
+still only one data point on one machine — no formal benchmarking across
+model sizes/hardware tiers has been done, and the earlier RAM-tiered
+7b/14b selection in `01-install-ollama.sh` was dropped back to a single
+size pending a second confirmed size for very constrained or high-RAM
+hardware.
+
 ## Unresolved
 
 ### 3. Docker↔Ollama networking mechanism
@@ -92,17 +114,6 @@ require cloning `NousResearch/hermes-agent` ourselves. **Action**: check
 upstream's installer script source and `hermes update --help` (or
 equivalent) for any version-selection capability before deciding this is
 infeasible.
-
-### 6. Default local model choice (`qwen2.5:14b`) — untested against real hardware
-
-Chosen as a reasonable-sounding default balancing capability against
-resource requirements, referencing (but not exactly matching) upstream
-documentation's own example (`qwen2.5-coder:32b`, which was judged likely
-too heavy for an unknown default target). No benchmarking has been done on
-any actual machine. **Action**: once Phase 1 hardware is known, benchmark
-at least two model sizes and adjust the default (and per-profile override
-guidance) based on real performance/quality tradeoffs, not the current
-placeholder reasoning.
 
 ### 7. macOS launchd implementation — not designed, only stubbed
 
@@ -155,7 +166,7 @@ until then this is a theoretical concern, not yet exercised.
 | 3 | Docker env var mechanism | `docker-compose.override.yml` | Medium — blocks Docker path only |
 | 4 | `ollama.service` unit name | `04-enable-autostart.sh` | Medium — boot ordering silently no-ops if wrong |
 | 5 | Upstream version pinning capability | `UPSTREAM_VERSION`, ADR-0003 | Low — affects reproducibility, not function |
-| 6 | Default model size/choice | `01-install-ollama.sh` | Low-medium — affects UX/performance, not correctness |
+| 6 | Default model size/choice | `01-install-ollama.sh` | **Resolved** — `qwen2.5:14b` swapped for `qwen3.5:9b` 2026-07-24 after real-hardware failure |
 | 7 | macOS launchd approach | not yet implemented | Medium — macOS autostart doesn't exist yet regardless |
 | 8 | WSL2 autostart approach | not yet designed | Medium — same, no design yet |
 | 9 | Ventoy cross-hardware portability | `iso-usb/README.md` | High — core "device agnostic" requirement |
