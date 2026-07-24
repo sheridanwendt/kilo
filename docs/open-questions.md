@@ -198,6 +198,24 @@ Ollama's library (open upstream feature request); only unofficial
 third-party re-uploads do, which is its own trust/provenance tradeoff if
 staying on the Qwen3.5 family is preferred over switching families.
 
+### 12. signal-cli is installed but not wired into Hermes as a usable channel
+
+`overlay/install/05-install-signal-cli.sh` (ADR-0014) gets the
+`signal-cli` binary present and on `PATH`, since Hermes's CLI
+(`hermes --help`, checked against real output on "stick") has no native
+`signal` gateway subcommand (unlike `whatsapp`/`whatsapp-cloud`/`slack`).
+Installing the binary alone doesn't give the agent any new capability —
+nothing currently calls it. Also unaddressed: account registration
+(phone number + live SMS/voice code) is a manual step the install script
+deliberately doesn't attempt, so a fresh instance has `signal-cli`
+present but unregistered until someone runs it by hand.
+
+**Action**: decide the actual intended use (a skill that shells out to
+`signal-cli send` for one-way admin notifications — signal-cli's own
+stated primary use case — vs. a fuller two-way messaging gateway, which
+would need custom bridge code Hermes doesn't provide natively) before
+building anything further on top of the binary being present.
+
 ## Assumptions requiring validation (summary table)
 
 | # | Assumption | Where used | Risk if wrong |
@@ -213,6 +231,7 @@ staying on the Qwen3.5 family is preferred over switching families.
 | 9 | Ventoy cross-hardware portability | `iso-usb/README.md` | High — core "device agnostic" requirement |
 | 10 | Thin-wrapper sufficiency long-term | ADR-0003 | Low near-term, unknown long-term |
 | 11 | `qwen3.5:9b` thinking-mode latency, can't be disabled | `default.yaml` | High — every turn pays a large, unbounded-feeling latency tax; owner decision pending |
+| 12 | signal-cli not wired into Hermes as a usable channel | `05-install-signal-cli.sh` | Low — binary present but inert until a skill/bridge is built |
 
 ## Future architectural decisions not yet made
 

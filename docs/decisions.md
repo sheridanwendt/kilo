@@ -562,3 +562,73 @@ belongs to Phase 1 real-hardware testing.
 staleness guard becomes unconditionally effective for anyone (no
 credentials needed for anonymous fetch of a public repo), which is a
 straightforward improvement with no action needed on the script's part.
+
+---
+
+## ADR-0014: signal-cli installed as a standalone binary, not a Hermes gateway platform
+
+**Decision**: Added `overlay/install/05-install-signal-cli.sh` as a new
+numbered install stage, installing [signal-cli](https://github.com/AsamK/signal-cli)
+(the official JVM build, per upstream's own recommended install path) and
+its Java runtime dependency. This gets the `signal-cli` binary present and
+on `PATH` only — it is explicitly **not** wired into Hermes's messaging
+gateway system (`gateway.platforms:` in the profile YAMLs). Account
+registration (a phone number plus a live SMS/voice verification code) is
+left as a manual, interactive, one-time step; the script prints
+instructions rather than attempting it.
+
+**Context**: The owner asked for Signal support to be added to the
+install. Before wiring it up as a full gateway platform (the way
+`telegram`/`slack`/`discord` are configured elsewhere in this repo), the
+running `hermes --help` output on real hardware (captured earlier this
+session) was checked: Hermes's CLI subcommand list includes `whatsapp`,
+`whatsapp-cloud`, and `slack` as first-class integrations, but **no
+`signal` subcommand exists**. Per `CLAUDE.md`'s "check whether Hermes
+Agent already does it natively before building it here," there is
+currently nothing native to hook into.
+
+**Alternatives considered**:
+- Build a custom skill or gateway shim that bridges Hermes's messaging
+  pipeline to `signal-cli`'s daemon/JSON-RPC mode, making Signal a true
+  two-way gateway platform like Telegram (rejected *for now* — this is
+  substantial, unconfirmed-schema work, exactly the kind of guessing that
+  went wrong earlier this session with `model:`/`gateway.platforms`
+  before real data was available; better done as a deliberate follow-up
+  once/if it's actually wanted, not bundled silently into "install the
+  binary").
+- Use a third-party/community Docker image or packaged build instead of
+  upstream's official JVM release tarball (rejected — no clear advantage,
+  and the official upstream release is the most trustworthy/maintained
+  source for a security-sensitive messaging credential store).
+- Use the GraalVM native build (a self-contained binary, no JRE
+  dependency) instead of the JVM build (not chosen, but flagged as a
+  legitimate lower-dependency alternative — the owner's provided
+  reference commands used the JVM build specifically, so that's what was
+  implemented; switching later is a small, isolated change if the JRE
+  dependency turns out to be unwelcome on constrained profiles).
+
+**Why this option was selected**: Matches what was actually asked for
+(the install commands the owner provided are the JVM build) while being
+honest about scope — signal-cli's own README describes its primary use
+case as one-way admin notifications from a server via daemon/JSON-RPC
+mode, which fits this project's likely near-term use (e.g. a future
+`instance-health`-style skill notifying the owner) better than assuming
+a full inbound/outbound chat gateway was wanted without confirming Hermes
+supports one.
+
+**Consequences**: `install.sh` gained a sixth step (`Step 6/6`); every
+step-count reference in `install.sh` and `CLAUDE.md`'s numbered-scripts
+description was updated accordingly. A new system dependency (a JRE,
+upstream states >=25) is introduced, installed defensively (tries the
+version-specific apt package first, falls back to `default-jre-headless`,
+warns — but does not fail the install — if the resulting version is
+still below 25). Idempotent: re-running `install.sh` skips both the Java
+and signal-cli install if `signal-cli` is already on `PATH`, verified
+against a fake-binary test harness (fresh install, idempotent skip, and
+an old-Java warning path) before committing.
+
+**Future implications**: `docs/open-questions.md` #12 tracks whether/how
+to actually make Signal a usable notification or gateway channel (a
+skill shelling out to `signal-cli send`, or something more integrated) —
+installing the binary alone doesn't give the agent any new capability
+until that follow-up work happens.

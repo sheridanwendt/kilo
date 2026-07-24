@@ -40,7 +40,9 @@ kilo/                                    (repo root)
     │   ├── 01-install-ollama.sh         Ollama install, systemd enable, context override, model pull (retried)
     │   ├── 02-install-hermes.sh         Upstream Hermes installer wrapper (+ --update mode)
     │   ├── 03-apply-profile.sh          Python/PyYAML config deep-merge -> ~/.hermes/config.yaml (pip-version-safe)
-    │   └── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
+    │   ├── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
+    │   ├── 05-install-signal-cli.sh     signal-cli binary + Java dep (see ADR-0014) — not a Hermes gateway platform yet
+    │   └── lib-apt-ipv4-fallback.sh     Shared helper, sourced by other steps; not itself a numbered stage
     ├── skills/
     │   └── custom/
     │       └── README.md                Describes instance-health + instance-provision skills (not yet built)
@@ -85,9 +87,10 @@ kilo/                                    (repo root)
 
 There are no "modules" in a programming-language sense — this is a shell
 script + YAML config project, not a compiled application. The closest
-equivalent to modules are the four numbered install scripts (each a
-self-contained, idempotent unit of work) and the config-profile files (each
-a self-contained deployment-target definition).
+equivalent to modules are the six numbered install scripts (each a
+self-contained, idempotent unit of work), the shared
+`lib-apt-ipv4-fallback.sh` helper they source, and the config-profile files
+(each a self-contained deployment-target definition).
 
 ## Expected future additions
 
@@ -96,7 +99,10 @@ Based on `docs/implementation-plan.md` and `docs/backlog.md`:
 - `overlay/skills/custom/instance-health/SKILL.md`
 - `overlay/skills/custom/instance-provision/SKILL.md`
 - `overlay/iso-usb/build-image.sh`
-- Possibly `overlay/install/05-*.sh` or similar if a new install stage is
+- Possibly a skill or gateway bridge for `signal-cli` (installed as of
+  `05-install-signal-cli.sh`/ADR-0014, but not yet wired into Hermes as a
+  usable notification or gateway channel — see `docs/open-questions.md` #12)
+- Possibly `overlay/install/06-*.sh` or similar if a new install stage is
   needed (e.g. macOS launchd registration, currently just a warning inside
   `01-install-ollama.sh`/`04-enable-autostart.sh` rather than a real
   implementation)

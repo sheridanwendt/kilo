@@ -174,6 +174,26 @@ future. Cross-referenced with `docs/implementation-plan.md` phases and
   the running container's actual config, not just referenced in a comment.
 - Plan step: 12.
 
+**Wire signal-cli into an actual notification/messaging capability**
+- Description: `05-install-signal-cli.sh` (ADR-0014) gets the binary
+  installed, but nothing uses it yet — Hermes has no native `signal`
+  gateway subcommand, unlike telegram/whatsapp/slack. Needs a decision on
+  scope (a skill shelling out to `signal-cli send` for one-way admin
+  notifications, matching signal-cli's own stated primary use case, vs. a
+  fuller two-way gateway bridge) before building anything, per
+  `docs/open-questions.md` #12.
+- Dependencies: none technically, but account registration (manual,
+  needs a live phone number + SMS/voice code) must happen on a real
+  instance first to actually test against.
+- Complexity: Low (notification skill) to Medium-high (full gateway
+  bridge, since Hermes has no native support to build on).
+- Expected impact: Turns an installed-but-inert binary into a real
+  capability.
+- Acceptance criteria: TBD once scope is decided — a notification skill's
+  bar is "successfully sends a real Signal message from a skill
+  invocation"; a gateway bridge's bar is much higher and undefined until
+  designed.
+
 ---
 
 ### P3 — Future / experimental

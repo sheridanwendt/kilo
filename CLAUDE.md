@@ -44,7 +44,7 @@ back to an explicit owner decision, not a default assumption.
   deployment targets should be new profile files, not new install scripts or
   conditional logic scattered through the shell scripts.
 - **Numbered install scripts run in a fixed order.** `overlay/install/01-*`
-  through `04-*` are called in sequence by `install.sh`. If you add a new
+  through `05-*` are called in sequence by `install.sh`. If you add a new
   install stage, give it the next number and keep it idempotent —
   `./install.sh` must be safely re-runnable on a machine that's already been
   set up.
