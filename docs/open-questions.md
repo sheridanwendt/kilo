@@ -80,6 +80,13 @@ model sizes/hardware tiers has been done, and the earlier RAM-tiered
 size pending a second confirmed size for very constrained or high-RAM
 hardware.
 
+**Follow-up problem found 2026-07-24 (see open question #11 below)**:
+`qwen3.5:9b` defaults to "thinking" mode, which cannot be disabled
+through this repo's Ollama integration — see #11. The context-length
+question this item was originally about is still correctly resolved;
+whether `qwen3.5:9b` is actually a *good* default given the thinking-mode
+problem is a separate, newly-open question.
+
 ## Unresolved
 
 ### 3. Docker↔Ollama networking mechanism
@@ -157,6 +164,40 @@ to stay correct over time. **Action**: revisit after the first time an
 upstream Hermes update actually changes something this repo depends on —
 until then this is a theoretical concern, not yet exercised.
 
+### 11. `qwen3.5:9b`'s "thinking" mode makes every turn slow, and can't be disabled through this repo's stack
+
+Found 2026-07-24 on "stick": the agent took multiple minutes to respond
+to a plain "hi", and one earlier attempt (before `model.max_tokens` was
+set) ran for 19+ minutes without stopping — a self-perpetuating loop
+where a truncated (`finish_reason=length`) reasoning block seemingly
+triggered a follow-up turn that reasoned about the truncation itself,
+also ran long, and repeated.
+
+Root cause: `qwen3.5:9b` defaults to extended "thinking" mode (confirmed
+via community reports: "adds 5-10x latency to every response"). The
+standard way to disable it is a `think: false` field in the request —
+but that only works against Ollama's *native* API, not the
+OpenAI-compatible `/v1` endpoint this repo's `model.base_url` uses.
+Empirically confirmed on real hardware: setting
+`model.extra_body: {"think": false}` in Hermes's config was accepted
+with no error but had **zero effect** — the reasoning block still
+appeared. No Modelfile-level fix exists either (`PARAMETER think false`
+is an open, unimplemented Ollama feature request as of this writing).
+
+Mitigated, not fixed: `model.max_tokens: 8192` (added to `default.yaml`)
+bounds the worst case — confirmed empirically to stop the open-ended
+runaway — but every ordinary turn, including trivial ones, still pays a
+large, unavoidable thinking-mode latency tax under this setup.
+
+**Action**: decide whether to accept this tradeoff (native 262k context,
+slow per-turn latency) or move to a model that doesn't default to
+extended thinking (e.g. Llama 3.1 8B, native 128k context, no
+thinking-mode overhead — the original recommendation before `qwen3.5:9b`
+was tried). Official non-thinking Qwen3.5 tags don't exist yet in
+Ollama's library (open upstream feature request); only unofficial
+third-party re-uploads do, which is its own trust/provenance tradeoff if
+staying on the Qwen3.5 family is preferred over switching families.
+
 ## Assumptions requiring validation (summary table)
 
 | # | Assumption | Where used | Risk if wrong |
@@ -171,6 +212,7 @@ until then this is a theoretical concern, not yet exercised.
 | 8 | WSL2 autostart approach | not yet designed | Medium — same, no design yet |
 | 9 | Ventoy cross-hardware portability | `iso-usb/README.md` | High — core "device agnostic" requirement |
 | 10 | Thin-wrapper sufficiency long-term | ADR-0003 | Low near-term, unknown long-term |
+| 11 | `qwen3.5:9b` thinking-mode latency, can't be disabled | `default.yaml` | High — every turn pays a large, unbounded-feeling latency tax; owner decision pending |
 
 ## Future architectural decisions not yet made
 

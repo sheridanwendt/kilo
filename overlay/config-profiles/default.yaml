@@ -30,6 +30,17 @@ model:
   base_url: "http://localhost:11434/v1"
   default: "qwen3.5:9b"
   context_length: 65536
+  # Safety net, not a performance fix: qwen3.5:9b defaults to "thinking"
+  # mode and Ollama's OpenAI-compatible /v1 endpoint doesn't honor a
+  # `think: false` override (confirmed empirically 2026-07-24 — tried
+  # extra_body: {"think": false}, no effect). Without a cap, a single
+  # turn can run unbounded (one real run went 19+ minutes on "hi" before
+  # being killed). max_tokens stops that worst case; it does not make
+  # ordinary turns fast, since the model still spends a large chunk of
+  # this budget thinking before answering even trivial prompts. Set
+  # generously (not tuned for snappy trivial replies) so real tool-calling
+  # turns aren't starved of budget by this safety net.
+  max_tokens: 8192
 
 # --- Cloud providers: configured, never auto-selected. ---
 # Credentials for these live in ~/.hermes/.env (populated separately, NOT
