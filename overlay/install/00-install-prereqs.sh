@@ -44,15 +44,16 @@ DISTRO="$(lsb_release -ds 2>/dev/null || echo 'unknown distro')"
 echo "  - Prereqs ready (${DISTRO})."
 
 # Soft resource sanity checks — warnings only, never block install. These
-# exist because the default local model (qwen2.5:14b) needs real RAM/disk
+# exist because the default local model (qwen3.5:9b) needs real RAM/disk
 # headroom, and a small VPS or thin VM can silently fail (OOM, disk full)
 # much later in the install with a confusing error otherwise.
 if command -v free >/dev/null 2>&1; then
   MEM_GB=$(( $(free -m | awk '/^Mem:/{print $2}') / 1024 ))
   if [[ "$MEM_GB" -lt 8 ]]; then
-    echo "  ! Warning: ~${MEM_GB}GB RAM detected. Step 2 will auto-select a" >&2
-    echo "    smaller local model (qwen2.5:7b) instead of the 14b default." >&2
-    echo "    Override with HPA_LOCAL_MODEL=... if you want a specific model." >&2
+    echo "  ! Warning: ~${MEM_GB}GB RAM detected. The default local model" >&2
+    echo "    (qwen3.5:9b) has run successfully on hardware this size before," >&2
+    echo "    but headroom is tight. Override with HPA_LOCAL_MODEL=... for a" >&2
+    echo "    smaller model if you hit OOM issues." >&2
   fi
 fi
 if command -v df >/dev/null 2>&1; then

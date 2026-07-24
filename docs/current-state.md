@@ -57,17 +57,20 @@ otherwise on an actual machine.
 - **Provider policy**: the *design* (local-first default, cloud manual-only,
   no fallback) is fully specified and reflected in
   `overlay/config-profiles/default.yaml`'s comments and structure. **Update
-  (2026-07-23)**: first real run on Sheridan's on-prem box ("stick") —
-  `docs/open-questions.md` items 1 and 2 are now resolved: both the
-  `model:` schema and `gateway.platforms` schema were confirmed correct by
+  (2026-07-23/24)**: first real runs on Sheridan's on-prem box ("stick") —
+  `docs/open-questions.md` items 1, 2, and 6 are now resolved. The
+  `model:` and `gateway.platforms` schemas were confirmed correct by
   diffing the live-generated `~/.hermes/config.yaml` against what
-  `03-apply-profile.sh` writes (byte-for-byte match). One real gap did
-  surface: the agent refused to initialize with a context-window error
-  (`OLLAMA_CONTEXT_LENGTH`'s systemd override isn't reflected in Ollama's
-  model-info metadata that Hermes checks against its 64k minimum). Fixed
-  by adding `model.context_length: 65536` to `default.yaml`, per Hermes's
-  own error-message guidance — not yet re-verified end-to-end on real
-  hardware after the fix.
+  `03-apply-profile.sh` writes (byte-for-byte match). The default local
+  model turned out to be a real dead end, though: `qwen2.5:14b`'s native
+  context is only 32,768 tokens (confirmed via Qwen's own model card),
+  below Hermes's 64k minimum and not safely extensible without YaRN
+  scaling — no config override could fix this honestly, since the model
+  genuinely can't serve that much context. Replaced the default with
+  `qwen3.5:9b` (native 262,144-token context), confirmed working
+  end-to-end on the same hardware. `model.context_length: 65536` in
+  `default.yaml` now reflects a real, actually-served window rather than
+  a workaround.
 - **Docker deployment**: `docker-compose.override.yml` exists and expresses
   the intent (sidecar Ollama container, local-first even in containers),
   but the mechanism for pointing the Hermes container at the sidecar
@@ -96,9 +99,10 @@ it.
   implementation — see `docs/implementation-plan.md` Phase 3).
 - WSL2 boot-autostart design (WSL2 doesn't boot like bare metal; no design
   work has happened here at all, only "test it" is on the checklist).
-- Any real benchmarking of `qwen2.5:14b` (the default local model) against
-  actual target hardware — the choice is a reasonable placeholder, not a
-  validated one.
+- Any real benchmarking of `qwen3.5:9b` (the default local model since
+  2026-07-24) against actual target hardware — confirmed *working* on one
+  machine (~7GB RAM), but not benchmarked for quality/speed, and not
+  tried against other hardware tiers.
 - Purchase-making capability — deliberately not started (ADR-0002).
 - Any CI/automated testing (see `docs/testing.md`).
 

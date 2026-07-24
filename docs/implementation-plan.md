@@ -52,8 +52,12 @@ see `docs/api-spec.md`).
   file itself).
 - `gateway.platforms` key name in the profile YAMLs is a placeholder,
   unconfirmed against `hermes gateway setup`'s actual output schema.
-- Hardware may not support the default `qwen2.5:14b` model well; no
-  benchmarking has been done on any specific target.
+- ~~Hardware may not support the default `qwen2.5:14b` model well~~ —
+  confirmed 2026-07-24: it doesn't, but not for a hardware-RAM reason —
+  its native context (32,768 tokens) is below Hermes's 64k minimum
+  regardless of hardware. Replaced with `qwen3.5:9b` (native 262,144
+  tokens); see `docs/open-questions.md` #6. Still no formal benchmarking
+  across model sizes/hardware tiers.
 - Systemd ordering (`After=`/`Requires=`) assumes Ollama's own systemd unit
   name is exactly `ollama.service` (standard for the official installer,
   but not independently re-verified here).
