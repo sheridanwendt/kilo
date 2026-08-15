@@ -2,10 +2,24 @@
 
 Drop your own `SKILL.md` files here (one directory per skill, following the
 `agentskills.io` open standard Hermes already speaks natively). These are
-copied into Hermes's skill search path during install so they're available
-alongside the 40+ built-in skills and anything Hermes auto-creates.
+copied into Hermes's skill search path (`~/.hermes/skills/custom/`) by
+`overlay/install/05-install-custom-skills.sh` during install, so they're
+available alongside the 40+ built-in skills and anything Hermes
+auto-creates. That target path is a best-effort assumption, not yet
+confirmed on real hardware — see `docs/open-questions.md`.
 
-Suggested first skills to build (Project Plan step 7):
+Built so far:
+
+- `inbox-triage/` — Gmail triage policy (via Composio): sender/subject-
+  pattern rules that map to label/archive/unsubscribe/delete actions, with
+  a human-approval gate for anything new or destructive. `SKILL.md` is the
+  compact runtime card; `reference/first-principles.md` and
+  `reference/policy-set-v1.1.md` hold the full rationale and are loaded on
+  demand rather than every session. Content-complete but **not yet run
+  against a real Gmail inbox** — see `docs/open-questions.md` and
+  `docs/testing.md` before treating it as validated.
+
+Suggested next skills to build (Project Plan step 7):
 
 - `instance-health/` — a status/health-check skill: reports which model
   provider is active, whether Ollama is reachable, disk/memory headroom,

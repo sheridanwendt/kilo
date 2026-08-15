@@ -113,6 +113,18 @@ correct.
   behavior (the human-in-the-loop gate is the whole point of this skill),
   so test the "user does not confirm" path as carefully as the "user
   confirms" path.
+- `inbox-triage`: two independent things need validating before this is
+  "done," not just written:
+  1. **Install wiring**: after `install.sh` runs, confirm Hermes actually
+     discovers the skill at `~/.hermes/skills/custom/inbox-triage/` (see
+     `docs/open-questions.md` #11) and loads `reference/*.md` on demand
+     rather than every session.
+  2. **Policy correctness**: run it against a real (or realistic sample)
+     Gmail inbox via Composio and check each precedence tier fires
+     correctly — especially the P3 high/low-confidence split and the P4
+     "never autonomous" guarantee, since those are the destructive/
+     highest-risk paths. Confirm the canary-period (log-only first batch)
+     behavior actually withholds action, not just logs alongside it.
 
 ## Unit / integration / end-to-end split
 

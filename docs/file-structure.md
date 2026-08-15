@@ -40,10 +40,14 @@ kilo/                                    (repo root)
     │   ├── 01-install-ollama.sh         Ollama install, systemd enable, context override, model pull (retried)
     │   ├── 02-install-hermes.sh         Upstream Hermes installer wrapper (+ --update mode)
     │   ├── 03-apply-profile.sh          Python/PyYAML config deep-merge -> ~/.hermes/config.yaml (pip-version-safe)
-    │   └── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
+    │   ├── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
+    │   └── 05-install-custom-skills.sh  Copies overlay/skills/custom/* -> ~/.hermes/skills/custom/ (target path unconfirmed, see open-questions.md)
     ├── skills/
     │   └── custom/
-    │       └── README.md                Describes instance-health + instance-provision skills (not yet built)
+    │       ├── README.md                Describes built + suggested custom skills
+    │       └── inbox-triage/            Gmail triage policy skill (Composio) — content-complete, not yet run against a real inbox
+    │           ├── SKILL.md             Compact runtime card, loaded every triage pass
+    │           └── reference/           First-principles + full policy-set docs, loaded on demand
     ├── docker/
     │   └── docker-compose.override.yml  Sidecar Ollama container for cloud-server profile (has open TODO)
     ├── iso-usb/
@@ -68,8 +72,11 @@ kilo/                                    (repo root)
   - **`overlay/install/`** — imperative shell (and one inline Python
     block). Numbered and ordered. New install stages get the next number.
   - **`overlay/skills/custom/`** — Hermes `SKILL.md` content, one directory
-    per skill, following the agentskills.io standard. Currently only a
-    README describing what should exist; no actual skill directories yet.
+    per skill, following the agentskills.io standard, following
+    progressive disclosure (a compact `SKILL.md` runtime card plus
+    `reference/` files loaded only when needed) where a skill's full
+    rationale is too long to load every session. Installed onto a target
+    machine by `overlay/install/05-install-custom-skills.sh`.
   - **`overlay/docker/`** — Docker-specific deployment assets, additive to
     (not replacing) upstream Hermes's own `docker-compose.yml`.
   - **`overlay/iso-usb/`** — USB/ISO image build assets. Currently
@@ -85,7 +92,7 @@ kilo/                                    (repo root)
 
 There are no "modules" in a programming-language sense — this is a shell
 script + YAML config project, not a compiled application. The closest
-equivalent to modules are the four numbered install scripts (each a
+equivalent to modules are the five numbered install scripts (each a
 self-contained, idempotent unit of work) and the config-profile files (each
 a self-contained deployment-target definition).
 
@@ -95,6 +102,9 @@ Based on `docs/implementation-plan.md` and `docs/backlog.md`:
 
 - `overlay/skills/custom/instance-health/SKILL.md`
 - `overlay/skills/custom/instance-provision/SKILL.md`
+- (`overlay/skills/custom/inbox-triage/` now exists — see above; still
+  needs `05-install-custom-skills.sh` validated end-to-end on real
+  hardware, and the policy set validated against a real Gmail inbox)
 - `overlay/iso-usb/build-image.sh`
 - Possibly `overlay/install/05-*.sh` or similar if a new install stage is
   needed (e.g. macOS launchd registration, currently just a warning inside
