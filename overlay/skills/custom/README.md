@@ -5,17 +5,34 @@ Drop your own `SKILL.md` files here (one directory per skill, following the
 copied into Hermes's skill search path (`~/.hermes/skills/custom/`) by
 `overlay/install/05-install-custom-skills.sh` during install, so they're
 available alongside the 40+ built-in skills and anything Hermes
-auto-creates. That target path is a best-effort assumption, not yet
-confirmed on real hardware — see `docs/open-questions.md`.
+auto-creates. That target path is a best-effort assumption, **not yet
+confirmed on real hardware** — see `docs/open-questions.md` #11 before
+relying on it; a real instance's `skills/` folder was observed to contain
+only bundled category folders (`email`, `productivity`, etc.) plus
+`.hub`/manifest bookkeeping files, with no `custom/` folder present (that's
+consistent with nothing having been added yet, but also consistent with
+Hermes expecting a different registration mechanism entirely — unresolved).
+
+**Avoid skill-name/description collisions with what's already installed.**
+Hermes ships 14 bundled skill categories by default (`email`,
+`productivity`, `research`, `social-media`, etc.), and smaller local models
+in particular get confused when asked to choose between several
+similarly-named/scoped skills (e.g. `gmail` vs `google-workspace` vs
+`inbox-management` vs `email`). Before adding a skill here: check it isn't
+redundant with a bundled category, and write its `description:` to be
+unambiguous about what it does and does not do — see `inbox-triage/`
+below for the pattern (explicitly states it's a decision-policy skill, not
+a mail-access tool, and names the skill it pairs with).
 
 Built so far:
 
-- `inbox-triage/` — Gmail triage policy (via Composio): sender/subject-
-  pattern rules that map to label/archive/unsubscribe/delete actions, with
-  a human-approval gate for anything new or destructive. `SKILL.md` is the
-  compact runtime card; `reference/first-principles.md` and
-  `reference/policy-set-v1.1.md` hold the full rationale and are loaded on
-  demand rather than every session. Content-complete but **not yet run
+- `inbox-triage/` — Gmail triage *policy*: sender/subject-pattern rules
+  that map to label/archive/unsubscribe/delete actions, with a
+  human-approval gate for anything new or destructive. It does not access
+  Gmail itself — pairs with the bundled Google Workspace skill (OAuth) for
+  that. `SKILL.md` is the compact runtime card; `reference/first-principles.md`
+  and `reference/policy-set-v1.1.md` hold the full rationale and are loaded
+  on demand rather than every session. Content-complete but **not yet run
   against a real Gmail inbox** — see `docs/open-questions.md` and
   `docs/testing.md` before treating it as validated.
 

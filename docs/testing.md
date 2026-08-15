@@ -120,10 +120,11 @@ correct.
      `docs/open-questions.md` #11) and loads `reference/*.md` on demand
      rather than every session.
   2. **Policy correctness**: run it against a real (or realistic sample)
-     Gmail inbox via Composio and check each precedence tier fires
-     correctly — especially the P3 high/low-confidence split and the P4
-     "never autonomous" guarantee, since those are the destructive/
-     highest-risk paths. Confirm the canary-period (log-only first batch)
+     Gmail inbox, via the bundled Google Workspace skill's OAuth access,
+     and check each precedence tier fires correctly — especially the P3
+     high/low-confidence split and the P4 "never autonomous" guarantee,
+     since those are the destructive/highest-risk paths. Confirm the
+     canary-period (log-only first batch)
      behavior actually withholds action, not just logs alongside it.
 
 ## Unit / integration / end-to-end split

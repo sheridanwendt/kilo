@@ -1,8 +1,10 @@
 # Inbox Management / Email Triage — Policy Set v1.1
 
-Scope: Gmail, accessed via Composio. Derived from `first-principles.md`.
-Read that doc first if you're new to this — every rule below traces back to
-one of its six principles.
+Scope: Gmail, accessed via the Google Workspace skill (OAuth) — this
+policy set only decides what to do with a message, it does not read, send,
+or otherwise talk to Gmail itself; see `../SKILL.md` for that boundary.
+Derived from `first-principles.md`. Read that doc first if you're new to
+this — every rule below traces back to one of its six principles.
 
 This doc is the source of truth for editing and review. The companion file
 `../SKILL.md` is the compact, execution-facing distillation of it — the two
@@ -142,8 +144,9 @@ waiting.
 
 ## Resiliency & failure handling
 
-This runs as unattended code against a live API (Composio/Gmail), not as a
-human checklist — it needs to fail safe, not fail open.
+This runs as unattended code against a live API (Google Workspace/Gmail,
+via OAuth), not as a human checklist — it needs to fail safe, not fail
+open.
 
 - **Unknown/unreachable lookup data → treat as no-match.** If the contacts
   list, domain list, or merchant list can't be read, don't assume a match
@@ -189,6 +192,8 @@ drafts have accumulated) to:
 - Retire or narrow any policy that's stopped matching real mail.
 
 ---
-v1.1 — drafted 2026-08-15, resiliency section added 2026-08-15. Scope will
-need real inbox samples to validate the deterministic patterns (domain
-lists, keyword lists) before this goes live against Composio/Gmail.
+v1.1 — drafted 2026-08-15, resiliency section added 2026-08-15, provider
+corrected from Composio to Google Workspace (OAuth) 2026-08-15 (see
+`docs/open-questions.md`). Scope will need real inbox samples to validate
+the deterministic patterns (domain lists, keyword lists) before this goes
+live against Gmail.

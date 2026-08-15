@@ -47,8 +47,10 @@ otherwise on an actual machine.
 - `overlay/skills/custom/README.md` — describes two skills that should be
   built (`instance-health`, `instance-provision`); neither exists as actual
   `SKILL.md` content yet.
-- `overlay/skills/custom/inbox-triage/` — Gmail triage policy skill (via
-  Composio), content-complete: `SKILL.md` (compact runtime card) plus
+- `overlay/skills/custom/inbox-triage/` — Gmail triage *policy* skill
+  (pairs with the bundled Google Workspace skill for actual OAuth-based
+  Gmail access; this skill only decides what to do with a message),
+  content-complete: `SKILL.md` (compact runtime card) plus
   `reference/first-principles.md` and `reference/policy-set-v1.1.md` (full
   rationale, loaded on demand). Not yet run against Hermes or a real Gmail
   inbox — see "Partially implemented" below.
@@ -90,13 +92,21 @@ otherwise on an actual machine.
   YAMLs is a placeholder pending confirmation against `hermes gateway
   setup`'s actual generated config.
 - **`inbox-triage` skill**: policy content is written and internally
-  consistent with its own `reference/first-principles.md`, but two things
-  are unconfirmed: (1) whether `~/.hermes/skills/custom/` is actually where
-  Hermes looks for custom skills (open question #11), and (2) whether the
+  consistent with its own `reference/first-principles.md`, but three
+  things are unconfirmed: (1) whether `~/.hermes/skills/custom/` is
+  actually where Hermes looks for custom skills — a real instance's
+  `skills/` folder was observed to contain only bundled category folders
+  (`email`, `productivity`, etc.) plus manifest/`.hub` bookkeeping, with no
+  `custom/` folder, which doesn't confirm or rule out the assumption (see
+  open question #11, now elevated to higher risk); (2) whether the
   deterministic-match patterns (domain lists, keyword lists) hold up
   against a real inbox — the policy doc says as much in its own status
-  line. No Composio/Gmail connector wiring exists in this repo yet; that's
-  a separate, not-yet-scoped piece of work.
+  line; (3) whether the skill's description is enough to keep it from
+  being confused with the bundled `email` category or the Google Workspace
+  skill when a (especially smaller, local) model is choosing between them
+  — mitigated in the current draft by stating explicitly that this skill
+  doesn't access Gmail itself, but unverified against an actual model
+  making that choice.
 
 ## Complete (validated)
 
@@ -108,9 +118,6 @@ it.
 - Any actual execution/testing (Project Plan steps 4-21 — see
   `docs/implementation-plan.md` for phased breakdown).
 - `instance-health` custom skill (design only).
-- Composio/Gmail connector wiring the `inbox-triage` skill actually needs
-  to act on a real inbox — the policy content exists, but nothing in this
-  repo yet configures Composio or grants Hermes Gmail access.
 - `instance-provision` custom skill / human-in-the-loop new-instance flow
   (design only) — this is the concrete implementation of the original
   "easily create new instances (manually, with a human in the loop)"

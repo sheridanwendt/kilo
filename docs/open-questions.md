@@ -82,20 +82,50 @@ hardware.
 
 ## Unresolved
 
-### 11. `~/.hermes/skills/custom/` as the custom-skill target path
+### 11. `~/.hermes/skills/custom/` as the custom-skill target path — risk raised, still unresolved
 
 `overlay/install/05-install-custom-skills.sh` copies
 `overlay/skills/custom/<name>/` into `~/.hermes/skills/custom/<name>/`,
 assuming that's where Hermes's skill loader looks for user-supplied
 `SKILL.md` content (by analogy with `config.yaml` and skill memory already
-living under `~/.hermes/`). This has **not** been confirmed against a real
-Hermes instance — it's possible the real path differs (e.g. a flat
-`~/.hermes/skills/`, no `custom/` subfolder, or a `hermes skill install`
-CLI command that expects a different layout entirely). **Action**: after
-running `install.sh`, confirm the `inbox-triage` skill (or any other
-custom skill) is actually discovered — e.g. does Hermes reference it when
-asked to triage email — and fix `TARGET_DIR` in
-`05-install-custom-skills.sh` if not.
+living under `~/.hermes/`).
+
+**New data point (2026-08-15, from the owner, not yet independently
+verified by a Claude instance):** a real Hermes instance's skills
+directory — `~/.hermes/skills/` on Linux, `%LOCALAPPDATA%\hermes\skills\`
+on Windows (native Windows is out of scope per ADR-0007/CLAUDE.md, so only
+the Linux path matters for `install.sh`, which only ever runs inside
+Linux/WSL2) — contains, by default: bundled category folders (`apple`,
+`autonomous-ai-agents`, `creative`, `email`, `github`, `media`, `mlops`,
+`note-taking`, `productivity`, `research`, `smart-home`, `social-media`,
+`software-development`), a hidden `.hub/` folder, and bookkeeping files
+`.bundled_manifest`, `.usage.json`, `.usage.json.lock` — but **no
+`custom/` folder**.
+
+This does not confirm or rule out the `custom/` assumption — it's
+consistent with nothing having been manually added to that particular
+instance yet, but the presence of `.bundled_manifest` and `.usage.json`
+also raises a real possibility this repo hadn't considered: Hermes may
+track installed skills in that manifest rather than (or in addition to)
+scanning the filesystem, in which case a raw `cp -r` into any folder —
+`custom/` or otherwise — might be silently invisible to the skill loader,
+or worse, might get treated as unmanaged content and pruned/flagged by a
+future `hermes update`. **Raising this from Medium to High risk** given
+that new information undermines confidence in the original assumption
+rather than confirming it.
+
+**Action**: before trusting this mechanism for anything real,
+1. Run `overlay/install/05-install-custom-skills.sh` (or `install.sh`) on
+   a real instance and confirm Hermes actually surfaces the `inbox-triage`
+   skill — e.g. ask it something that should trigger the skill and see if
+   its behavior/reasoning reflects the policy card.
+2. Check `hermes skill --help` (or equivalent) for a registration command
+   (e.g. `hermes skill install <path>`) — if one exists, it's more likely
+   the intended mechanism than a raw file copy, and `.bundled_manifest`
+   would need updating too, which a subcommand would handle and a copy
+   would not.
+3. If a raw copy does turn out to work, confirm it survives a `hermes
+   update` / `install.sh --update` run rather than being silently removed.
 
 ### 3. Docker↔Ollama networking mechanism
 
@@ -186,7 +216,7 @@ until then this is a theoretical concern, not yet exercised.
 | 8 | WSL2 autostart approach | not yet designed | Medium — same, no design yet |
 | 9 | Ventoy cross-hardware portability | `iso-usb/README.md` | High — core "device agnostic" requirement |
 | 10 | Thin-wrapper sufficiency long-term | ADR-0003 | Low near-term, unknown long-term |
-| 11 | `~/.hermes/skills/custom/` target path | `05-install-custom-skills.sh` | Medium — custom skills silently invisible to Hermes if wrong |
+| 11 | `~/.hermes/skills/custom/` target path | `05-install-custom-skills.sh` | High — custom skills silently invisible to Hermes if wrong, and a raw copy may not be the right mechanism at all (manifest-based registration possible) |
 
 ## Future architectural decisions not yet made
 

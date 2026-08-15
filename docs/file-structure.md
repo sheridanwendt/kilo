@@ -45,7 +45,7 @@ kilo/                                    (repo root)
     ├── skills/
     │   └── custom/
     │       ├── README.md                Describes built + suggested custom skills
-    │       └── inbox-triage/            Gmail triage policy skill (Composio) — content-complete, not yet run against a real inbox
+    │       └── inbox-triage/            Gmail triage policy skill (pairs with bundled Google Workspace skill) — content-complete, not yet run against a real inbox
     │           ├── SKILL.md             Compact runtime card, loaded every triage pass
     │           └── reference/           First-principles + full policy-set docs, loaded on demand
     ├── docker/

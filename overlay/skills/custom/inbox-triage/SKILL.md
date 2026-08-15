@@ -1,9 +1,15 @@
 ---
 name: inbox-triage
-description: Gmail inbox triage via Composio — sender/subject-pattern policy matching to label, archive, unsubscribe, or delete mail, with a human-approval gate for anything new or destructive. Deterministic sender/domain/header/regex checks should run first, in code; load this skill only when that deterministic pass returns no match or low confidence, or when asked to review/edit triage policy itself.
+description: Decision policy for what to DO with a Gmail message once it's already in hand — label/archive/unsubscribe/delete choices and a human-approval gate for anything new or destructive. This is a policy/reasoning skill, not a mail-access tool: it does not read, send, or otherwise talk to Gmail itself. Pair it with the Google Workspace skill (OAuth), which handles actual mail access. Deterministic sender/domain/header/regex checks should run first, in code; load this skill only when that deterministic pass returns no match or low confidence, or when asked to review/edit triage policy itself.
 ---
 
 # Inbox Triage — Runtime Card v1.1
+
+Not an email client. This skill takes a message the Google Workspace skill
+has already retrieved (via its own OAuth-based Gmail access) and decides
+what should happen to it — it never calls Gmail itself. If you need to
+actually fetch, send, or search mail, that's the Google Workspace skill,
+not this one.
 
 (Full rationale: `reference/policy-set-v1.1.md`, incl. resiliency notes.
 Deterministic sender/domain/header/regex checks run in code, not here — only
