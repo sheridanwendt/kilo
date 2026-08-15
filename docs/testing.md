@@ -48,6 +48,31 @@ correct.
   that the rest of the install still functions (relevant for USB image
   building, where autostart may need to be configured differently).
 
+### Content sync (`sync-to-hermes.sh` / `.ps1`, ADR-0014)
+
+- **Standalone run, both OSes**: against a real, already-installed Hermes
+  agent (not via `install.sh`), run `sync-to-hermes.sh` on Linux and
+  `sync-to-hermes.ps1` on native Windows. Confirm both land content in the
+  same relative place and that Hermes picks it up (see
+  `docs/open-questions.md` #11) — this is the actual acceptance test the
+  ADR is written against, not just "the script exits 0."
+- **`--dry-run` / `-DryRun`**: confirm nothing is written to disk and the
+  reported would-do list matches what a real run actually does.
+- **Idempotency**: run twice in a row; second run should produce an
+  identical result, not duplicate or error.
+- **Missing Hermes directory**: point `--hermes-dir`/`-HermesDir` at a path
+  that doesn't exist; confirm it fails with a clear message rather than
+  silently creating a fresh, empty `.hermes`-like directory (which would
+  split state across two locations undetected).
+- **`install.sh` integration**: confirm `install.sh`'s own call to
+  `sync-to-hermes.sh --yes` still works end-to-end as part of a full
+  install (this replaced the standalone
+  `overlay/install/05-install-custom-skills.sh` step).
+- **PowerShell-specific**: `sync-to-hermes.ps1` has not been executed
+  anywhere yet (no PowerShell available where it was written) — treat it
+  as fully unvalidated until run on a real Windows box, independent of how
+  well-tested the bash version is.
+
 ### Config correctness (highest priority — see `docs/open-questions.md`)
 
 - After `03-apply-profile.sh` runs, **diff the generated
@@ -113,6 +138,22 @@ correct.
   behavior (the human-in-the-loop gate is the whole point of this skill),
   so test the "user does not confirm" path as carefully as the "user
   confirms" path.
+- `inbox-triage`: two independent things need validating before this is
+  "done," not just written:
+  1. **Sync wiring**: after `install.sh` (Linux) or `sync-to-hermes.ps1`
+     (Windows, run standalone against an existing agent) runs, confirm
+     Hermes actually discovers the skill at
+     `<hermes-dir>/skills/custom/inbox-triage/` (see
+     `docs/open-questions.md` #11) and loads `reference/*.md` on demand
+     rather than every session. Test both the bash and PowerShell paths —
+     the PowerShell script has only been reviewed, never executed.
+  2. **Policy correctness**: run it against a real (or realistic sample)
+     Gmail inbox, via the bundled Google Workspace skill's OAuth access,
+     and check each precedence tier fires correctly — especially the P3
+     high/low-confidence split and the P4 "never autonomous" guarantee,
+     since those are the destructive/highest-risk paths. Confirm the
+     canary-period (log-only first batch)
+     behavior actually withholds action, not just logs alongside it.
 
 ## Unit / integration / end-to-end split
 

@@ -154,27 +154,31 @@ if [[ "$UPDATE_ONLY" == true ]]; then
   echo "==> Update mode: re-applying profile + pulling upstream Hermes updates"
   bash "$INSTALL_DIR/02-install-hermes.sh" --update
   bash "$INSTALL_DIR/03-apply-profile.sh"
+  "$SCRIPT_DIR/sync-to-hermes.sh" --hermes-dir "$HOME/.hermes" --yes
   echo "==> Update complete."
   exit 0
 fi
 
-echo "==> Step 1/5: Installing baseline OS prerequisites"
+echo "==> Step 1/6: Installing baseline OS prerequisites"
 bash "$INSTALL_DIR/00-install-prereqs.sh"
 
-echo "==> Step 2/5: Installing Ollama (default local model provider)"
+echo "==> Step 2/6: Installing Ollama (default local model provider)"
 bash "$INSTALL_DIR/01-install-ollama.sh"
 
-echo "==> Step 3/5: Installing Hermes Agent (upstream)"
+echo "==> Step 3/6: Installing Hermes Agent (upstream)"
 bash "$INSTALL_DIR/02-install-hermes.sh"
 
-echo "==> Step 4/5: Applying profile '$PROFILE'"
+echo "==> Step 4/6: Applying profile '$PROFILE'"
 bash "$INSTALL_DIR/03-apply-profile.sh"
 
 if [[ "$SKIP_AUTOSTART" == false ]]; then
-  echo "==> Step 5/5: Registering boot-time autostart"
+  echo "==> Step 5/6: Registering boot-time autostart"
   bash "$INSTALL_DIR/04-enable-autostart.sh"
 else
-  echo "==> Step 5/5: Skipped (--skip-autostart)"
+  echo "==> Step 5/6: Skipped (--skip-autostart)"
 fi
+
+echo "==> Step 6/6: Syncing custom skills (and memories/cron/hooks, once populated)"
+"$SCRIPT_DIR/sync-to-hermes.sh" --hermes-dir "$HOME/.hermes" --yes
 
 echo "==> Done. Run 'hermes' to chat, or check 'systemctl status hermes-gateway ollama' for the running services."

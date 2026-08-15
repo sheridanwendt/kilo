@@ -562,3 +562,89 @@ belongs to Phase 1 real-hardware testing.
 staleness guard becomes unconditionally effective for anyone (no
 credentials needed for anonymous fetch of a public repo), which is a
 straightforward improvement with no action needed on the script's part.
+
+---
+
+## ADR-0014: Standalone content-sync scripts (`sync-to-hermes.sh` / `.ps1`), native on both Linux and Windows
+
+**Decision**: Add `sync-to-hermes.sh` (bash) and `sync-to-hermes.ps1`
+(PowerShell) at the repo root — a pair of standalone scripts, independent
+of `install.sh`, that copy this repo's authored content
+(`overlay/skills/`, and `overlay/memories/`, `overlay/cron/`,
+`overlay/hooks/` once populated) onto an *existing* Hermes agent's
+directory. No OS packages, Ollama, systemd, or `config.yaml` involved —
+just `git clone` the repo, then run the script for your OS. This is two
+narrower, related changes bundled together:
+
+1. **Scope expansion of "this repo's job."** CLAUDE.md's Architectural
+   Principles previously stated this repo's job "ends at a correct
+   `~/.hermes/config.yaml` and correct systemd units" and does not
+   maintain parallel state elsewhere. That's revised: this repo may now
+   also seed/refresh specific subdirectories of an existing agent's own
+   directory (skills, and later memories/cron/hooks) — still not general
+   `~/.hermes/` management (no touching auth tokens, conversation memory,
+   or anything not in the fixed category list), but a real, intentional
+   widening at the owner's explicit request.
+2. **A scoped exception to ADR-0007** (native Windows out of scope). Full
+   provisioning (`install.sh`) still requires WSL2 on Windows, per
+   ADR-0007 — that's unchanged and this doesn't reopen it. But
+   content-syncing touches none of the reasons ADR-0007 excluded native
+   Windows (no Ollama install, no systemd, no OS package management), so
+   there's no reason to force a Windows user through WSL2 just to copy
+   files onto an agent that's very likely already running natively on
+   Windows in the first place (its state directory is
+   `%LOCALAPPDATA%\hermes`, the Windows side — reaching that from WSL2
+   would mean crossing the `/mnt/c/...` boundary for no benefit).
+
+**Context**: The owner has an existing, recently-installed Hermes agent
+and wants an easy way to pull this repo's authored content onto it without
+re-running the full installer — and wants that to work whether that agent
+is on Linux or native Windows, since Hermes's own state directory differs
+by OS (`~/.hermes` vs. `%LOCALAPPDATA%\hermes`, confirmed by the owner
+directly, not assumed — see `docs/open-questions.md` #11).
+
+**Alternatives considered**:
+- *A single cross-platform Python script.* Rejected per CLAUDE.md's
+  existing bias against introducing Python for install/glue code unless
+  bash is a poor fit — and unlike `03-apply-profile.sh`'s YAML merge (a
+  genuine bash weak spot), directory mirroring is something both bash and
+  PowerShell already do natively. A Python script would also add a new
+  "is Python installed" precondition on a fresh Windows machine that
+  PowerShell (bundled since Windows 7) doesn't have.
+- *Extend `install.sh` with a `--skills-only`-style flag.* Rejected:
+  `install.sh` is Linux/WSL2-only by construction (systemd, apt, `sudo`
+  throughout) and can't run natively on Windows at all, so it can't serve
+  half of this requirement regardless of flags. Keeping this as a wholly
+  separate, simpler entrypoint also matches the actual use case (an
+  already-configured agent, not a fresh machine) better than overloading
+  the full installer's flag surface.
+- *Require WSL2 for the Windows case too, reusing `sync-to-hermes.sh`
+  as-is.* Rejected for the reason under point 2 above — unnecessary
+  friction (installing/opening WSL2, then crossing the Windows/Linux
+  filesystem boundary) for an operation that has nothing to do with why
+  WSL2 exists as a requirement for `install.sh` in the first place.
+
+**Why this option was selected**: Matches each OS's own native tooling
+(no new runtime dependency introduced on either side), keeps `install.sh`
+unchanged in scope and risk, and directly serves the stated use case (an
+existing, low-risk-to-overwrite agent) rather than the fresh-machine case
+`install.sh` is built for.
+
+**Consequences**: `overlay/install/05-install-custom-skills.sh` (added
+earlier the same day, before this ADR) is removed — its logic now lives in
+`sync-to-hermes.sh`'s `skills` handling, and `install.sh`'s own custom-skill
+step calls that script directly (`--yes --hermes-dir "$HOME/.hermes"`)
+rather than maintaining separate copy logic in two places. `memories/`,
+`cron/`, and `hooks/` are wired into both scripts' category list now, with
+no actual content yet — they're genuinely no-ops until this repo has
+something to put there, which keeps the mechanism ready without inventing
+placeholder content.
+
+**Future implications**: The `~/.hermes/skills/custom/` target-path risk
+already tracked in `docs/open-questions.md` #11 now extends to whatever
+paths `memories/`, `cron/`, and `hooks/` resolve to — none of the four
+have been confirmed against a real Hermes instance yet, and the `.ps1`
+script specifically has only been reviewed, not executed (no PowerShell
+runtime was available in the environment this was written in) — both
+scripts need a real run on real Linux and Windows Hermes installs before
+either is trusted for anything that matters.

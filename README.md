@@ -152,6 +152,28 @@ cd kilo
 See `overlay/config-profiles/` for the other profiles (`cloud-server`,
 `usb-offline`), and `PROJECT_PLAN.md` for the full, checkable task list.
 
+**Already have a working Hermes agent and just want this repo's content
+(skills, etc.) on it?** Skip `install.sh` — it also installs Ollama, OS
+packages, and systemd units, which you don't need again. Use the
+standalone sync script instead:
+
+```bash
+git clone https://github.com/sheridanwendt/kilo.git
+cd kilo
+./sync-to-hermes.sh          # Linux / macOS / WSL2
+```
+
+```powershell
+git clone https://github.com/sheridanwendt/kilo.git
+cd kilo
+.\sync-to-hermes.ps1          # native Windows
+```
+
+Both locate your existing agent's directory (`~/.hermes` or
+`%LOCALAPPDATA%\hermes`), show what would change, and ask for confirmation
+before overwriting anything — pass `--dry-run`/`-DryRun` to preview only,
+or `--yes`/`-Yes` to skip the prompt. See `docs/decisions.md` ADR-0014.
+
 ## Doc map
 
 | File | Purpose |

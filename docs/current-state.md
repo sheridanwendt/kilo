@@ -47,6 +47,29 @@ otherwise on an actual machine.
 - `overlay/skills/custom/README.md` — describes two skills that should be
   built (`instance-health`, `instance-provision`); neither exists as actual
   `SKILL.md` content yet.
+- `overlay/skills/custom/inbox-triage/` — Gmail triage *policy* skill
+  (pairs with the bundled Google Workspace skill for actual OAuth-based
+  Gmail access; this skill only decides what to do with a message),
+  content-complete: `SKILL.md` (compact runtime card) plus
+  `reference/first-principles.md` and `reference/policy-set-v1.1.md` (full
+  rationale, loaded on demand). Not yet run against Hermes or a real Gmail
+  inbox — see "Partially implemented" below.
+- `sync-to-hermes.sh` (bash) / `sync-to-hermes.ps1` (PowerShell) — standalone
+  content-sync scripts (ADR-0014), root-level, independent of `install.sh`.
+  Copy `overlay/skills/custom/*` (and `memories/`, `cron/`, `hooks/`, once
+  populated) into an existing Hermes agent's directory
+  (`~/.hermes/`/`%LOCALAPPDATA%\hermes`), with a confirmation prompt,
+  `--dry-run`, and `--hermes-dir`/`-HermesDir` override. `install.sh`'s own
+  custom-skill step now calls `sync-to-hermes.sh` directly rather than
+  maintaining separate copy logic (the earlier
+  `overlay/install/05-install-custom-skills.sh` is removed). The bash
+  version has been exercised end-to-end against a mock Hermes directory
+  (dry-run, real copy, idempotent re-run, missing-directory error path all
+  verified) in this container; the PowerShell version has only been
+  reviewed, not executed — no `pwsh`/PowerShell runtime was available in
+  this environment. The target path itself remains an unconfirmed
+  assumption against a real Hermes instance (see `docs/open-questions.md`
+  #11).
 - Syntax-checked (`bash -n`) for all shell scripts — confirms no shell
   syntax errors, confirms nothing about actual runtime correctness.
 - All files committed to git and pushed to
@@ -79,6 +102,22 @@ otherwise on an actual machine.
 - **Messaging gateway config**: `gateway.platforms` key in the profile
   YAMLs is a placeholder pending confirmation against `hermes gateway
   setup`'s actual generated config.
+- **`inbox-triage` skill**: policy content is written and internally
+  consistent with its own `reference/first-principles.md`, but three
+  things are unconfirmed: (1) whether `~/.hermes/skills/custom/` is
+  actually where Hermes looks for custom skills — a real instance's
+  `skills/` folder was observed to contain only bundled category folders
+  (`email`, `productivity`, etc.) plus manifest/`.hub` bookkeeping, with no
+  `custom/` folder, which doesn't confirm or rule out the assumption (see
+  open question #11, now elevated to higher risk); (2) whether the
+  deterministic-match patterns (domain lists, keyword lists) hold up
+  against a real inbox — the policy doc says as much in its own status
+  line; (3) whether the skill's description is enough to keep it from
+  being confused with the bundled `email` category or the Google Workspace
+  skill when a (especially smaller, local) model is choosing between them
+  — mitigated in the current draft by stating explicitly that this skill
+  doesn't access Gmail itself, but unverified against an actual model
+  making that choice.
 
 ## Complete (validated)
 

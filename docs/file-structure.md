@@ -14,7 +14,9 @@ kilo/                                    (repo root)
 ├── ARCHITECTURE.md                      Original reference-architecture write-up
 ├── PROJECT_PLAN.md                      21-step checklist (owner-facing progress tracker)
 ├── .gitignore                           Excludes secrets, .hermes/, USB build artifacts
-├── install.sh                           Single entrypoint: git clone + ./install.sh
+├── install.sh                           Full first-time install entrypoint: git clone + ./install.sh
+├── sync-to-hermes.sh                    Content-only sync onto an *existing* Hermes agent (Linux/macOS/WSL2, see ADR-0014)
+├── sync-to-hermes.ps1                   Same, native Windows (PowerShell)
 ├── docs/                                Deep-dive engineering documentation (this handoff)
 │   ├── architecture.md                  System architecture, data flow, Mermaid diagrams
 │   ├── decisions.md                     ADR log
@@ -43,7 +45,10 @@ kilo/                                    (repo root)
     │   └── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
     ├── skills/
     │   └── custom/
-    │       └── README.md                Describes instance-health + instance-provision skills (not yet built)
+    │       ├── README.md                Describes built + suggested custom skills
+    │       └── inbox-triage/            Gmail triage policy skill (pairs with bundled Google Workspace skill) — content-complete, not yet run against a real inbox
+    │           ├── SKILL.md             Compact runtime card, loaded every triage pass
+    │           └── reference/           First-principles + full policy-set docs, loaded on demand
     ├── docker/
     │   └── docker-compose.override.yml  Sidecar Ollama container for cloud-server profile (has open TODO)
     ├── iso-usb/
@@ -68,8 +73,15 @@ kilo/                                    (repo root)
   - **`overlay/install/`** — imperative shell (and one inline Python
     block). Numbered and ordered. New install stages get the next number.
   - **`overlay/skills/custom/`** — Hermes `SKILL.md` content, one directory
-    per skill, following the agentskills.io standard. Currently only a
-    README describing what should exist; no actual skill directories yet.
+    per skill, following the agentskills.io standard, following
+    progressive disclosure (a compact `SKILL.md` runtime card plus
+    `reference/` files loaded only when needed) where a skill's full
+    rationale is too long to load every session. Installed onto a target
+    machine as part of `install.sh` (which calls `sync-to-hermes.sh`), or
+    standalone via `sync-to-hermes.sh` / `.ps1` directly — see ADR-0014.
+    Sibling `overlay/memories/`, `overlay/cron/`, `overlay/hooks/`
+    directories are wired into the same sync mechanism but don't exist yet
+    (no content to put there yet).
   - **`overlay/docker/`** — Docker-specific deployment assets, additive to
     (not replacing) upstream Hermes's own `docker-compose.yml`.
   - **`overlay/iso-usb/`** — USB/ISO image build assets. Currently
@@ -85,7 +97,7 @@ kilo/                                    (repo root)
 
 There are no "modules" in a programming-language sense — this is a shell
 script + YAML config project, not a compiled application. The closest
-equivalent to modules are the four numbered install scripts (each a
+equivalent to modules are the five numbered install scripts (each a
 self-contained, idempotent unit of work) and the config-profile files (each
 a self-contained deployment-target definition).
 
@@ -95,6 +107,10 @@ Based on `docs/implementation-plan.md` and `docs/backlog.md`:
 
 - `overlay/skills/custom/instance-health/SKILL.md`
 - `overlay/skills/custom/instance-provision/SKILL.md`
+- (`overlay/skills/custom/inbox-triage/` now exists — see above; still
+  needs `sync-to-hermes.sh`/`.ps1` validated end-to-end on real hardware
+  on both Linux and Windows, and the policy set validated against a real
+  Gmail inbox)
 - `overlay/iso-usb/build-image.sh`
 - Possibly `overlay/install/05-*.sh` or similar if a new install stage is
   needed (e.g. macOS launchd registration, currently just a warning inside
