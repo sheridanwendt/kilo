@@ -54,11 +54,22 @@ otherwise on an actual machine.
   `reference/first-principles.md` and `reference/policy-set-v1.1.md` (full
   rationale, loaded on demand). Not yet run against Hermes or a real Gmail
   inbox — see "Partially implemented" below.
-- `overlay/install/05-install-custom-skills.sh` — new install stage, wired
-  into both the full install and `--update` paths in `install.sh`, copies
-  `overlay/skills/custom/*` into `~/.hermes/skills/custom/`. Syntax-checked
-  only; the target path is an unconfirmed assumption (see
-  `docs/open-questions.md` #11).
+- `sync-to-hermes.sh` (bash) / `sync-to-hermes.ps1` (PowerShell) — standalone
+  content-sync scripts (ADR-0014), root-level, independent of `install.sh`.
+  Copy `overlay/skills/custom/*` (and `memories/`, `cron/`, `hooks/`, once
+  populated) into an existing Hermes agent's directory
+  (`~/.hermes/`/`%LOCALAPPDATA%\hermes`), with a confirmation prompt,
+  `--dry-run`, and `--hermes-dir`/`-HermesDir` override. `install.sh`'s own
+  custom-skill step now calls `sync-to-hermes.sh` directly rather than
+  maintaining separate copy logic (the earlier
+  `overlay/install/05-install-custom-skills.sh` is removed). The bash
+  version has been exercised end-to-end against a mock Hermes directory
+  (dry-run, real copy, idempotent re-run, missing-directory error path all
+  verified) in this container; the PowerShell version has only been
+  reviewed, not executed — no `pwsh`/PowerShell runtime was available in
+  this environment. The target path itself remains an unconfirmed
+  assumption against a real Hermes instance (see `docs/open-questions.md`
+  #11).
 - Syntax-checked (`bash -n`) for all shell scripts — confirms no shell
   syntax errors, confirms nothing about actual runtime correctness.
 - All files committed to git and pushed to

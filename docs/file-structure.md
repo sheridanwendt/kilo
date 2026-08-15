@@ -14,7 +14,9 @@ kilo/                                    (repo root)
 ├── ARCHITECTURE.md                      Original reference-architecture write-up
 ├── PROJECT_PLAN.md                      21-step checklist (owner-facing progress tracker)
 ├── .gitignore                           Excludes secrets, .hermes/, USB build artifacts
-├── install.sh                           Single entrypoint: git clone + ./install.sh
+├── install.sh                           Full first-time install entrypoint: git clone + ./install.sh
+├── sync-to-hermes.sh                    Content-only sync onto an *existing* Hermes agent (Linux/macOS/WSL2, see ADR-0014)
+├── sync-to-hermes.ps1                   Same, native Windows (PowerShell)
 ├── docs/                                Deep-dive engineering documentation (this handoff)
 │   ├── architecture.md                  System architecture, data flow, Mermaid diagrams
 │   ├── decisions.md                     ADR log
@@ -40,8 +42,7 @@ kilo/                                    (repo root)
     │   ├── 01-install-ollama.sh         Ollama install, systemd enable, context override, model pull (retried)
     │   ├── 02-install-hermes.sh         Upstream Hermes installer wrapper (+ --update mode)
     │   ├── 03-apply-profile.sh          Python/PyYAML config deep-merge -> ~/.hermes/config.yaml (pip-version-safe)
-    │   ├── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
-    │   └── 05-install-custom-skills.sh  Copies overlay/skills/custom/* -> ~/.hermes/skills/custom/ (target path unconfirmed, see open-questions.md)
+    │   └── 04-enable-autostart.sh       systemd registration, ordering, and User=/HOME= pinning (see ADR-0012)
     ├── skills/
     │   └── custom/
     │       ├── README.md                Describes built + suggested custom skills
@@ -76,7 +77,11 @@ kilo/                                    (repo root)
     progressive disclosure (a compact `SKILL.md` runtime card plus
     `reference/` files loaded only when needed) where a skill's full
     rationale is too long to load every session. Installed onto a target
-    machine by `overlay/install/05-install-custom-skills.sh`.
+    machine as part of `install.sh` (which calls `sync-to-hermes.sh`), or
+    standalone via `sync-to-hermes.sh` / `.ps1` directly — see ADR-0014.
+    Sibling `overlay/memories/`, `overlay/cron/`, `overlay/hooks/`
+    directories are wired into the same sync mechanism but don't exist yet
+    (no content to put there yet).
   - **`overlay/docker/`** — Docker-specific deployment assets, additive to
     (not replacing) upstream Hermes's own `docker-compose.yml`.
   - **`overlay/iso-usb/`** — USB/ISO image build assets. Currently
@@ -103,8 +108,9 @@ Based on `docs/implementation-plan.md` and `docs/backlog.md`:
 - `overlay/skills/custom/instance-health/SKILL.md`
 - `overlay/skills/custom/instance-provision/SKILL.md`
 - (`overlay/skills/custom/inbox-triage/` now exists — see above; still
-  needs `05-install-custom-skills.sh` validated end-to-end on real
-  hardware, and the policy set validated against a real Gmail inbox)
+  needs `sync-to-hermes.sh`/`.ps1` validated end-to-end on real hardware
+  on both Linux and Windows, and the policy set validated against a real
+  Gmail inbox)
 - `overlay/iso-usb/build-image.sh`
 - Possibly `overlay/install/05-*.sh` or similar if a new install stage is
   needed (e.g. macOS launchd registration, currently just a warning inside

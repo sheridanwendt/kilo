@@ -48,15 +48,21 @@ back to an explicit owner decision, not a default assumption.
   install stage, give it the next number and keep it idempotent —
   `./install.sh` must be safely re-runnable on a machine that's already been
   set up.
-- **Everything writes into `~/.hermes/`.** That directory is Hermes's own
-  state (memory, config, auth tokens). This repo's job is to arrive at a
-  correct `~/.hermes/config.yaml` and correct systemd units; it does not
-  maintain parallel state elsewhere.
+- **Everything writes into `~/.hermes/` (or `%LOCALAPPDATA%\hermes` on
+  Windows).** That directory is Hermes's own state (memory, config, auth
+  tokens). This repo's job is to arrive at a correct `config.yaml` and
+  correct systemd units, plus — as of ADR-0014 — to optionally seed/refresh
+  a fixed set of content subdirectories (`skills/`, and `memories/`,
+  `cron/`, `hooks/` once populated) via `sync-to-hermes.sh` /
+  `sync-to-hermes.ps1`. It still does not touch anything outside that
+  fixed category list (no auth tokens, no conversation memory, no free-form
+  state).
 - **Env var prefix `HPA_`** for anything this repo (not upstream Hermes)
   controls: `HPA_PROFILE`, `HPA_PROFILE_FILE`, `HPA_OVERLAY_DIR`,
-  `HPA_LOCAL_MODEL`, `HPA_OLLAMA_CONTEXT_LENGTH`. Keep using this prefix for
-  new variables so it's always obvious what's ours vs. upstream Hermes's own
-  env vars (`ANTHROPIC_API_KEY`, `HF_TOKEN`, etc.).
+  `HPA_LOCAL_MODEL`, `HPA_OLLAMA_CONTEXT_LENGTH`, `HPA_HERMES_DIR`. Keep
+  using this prefix for new variables so it's always obvious what's ours
+  vs. upstream Hermes's own env vars (`ANTHROPIC_API_KEY`, `HF_TOKEN`,
+  etc.).
 
 ## Naming conventions
 
@@ -205,9 +211,14 @@ back to an explicit owner decision, not a default assumption.
 
 ## Important constraints
 
-- Native Windows support is explicitly out of scope; WSL2 is the only
-  supported Windows path (this is an upstream Hermes limitation, not a gap
-  in this repo — see ADR-0007).
+- Native Windows support for *provisioning* (`install.sh`: OS packages,
+  Ollama, systemd) is explicitly out of scope; WSL2 is the only supported
+  Windows path for that (this is an upstream Hermes limitation, not a gap
+  in this repo — see ADR-0007). **Scoped exception (ADR-0014)**:
+  `sync-to-hermes.ps1` runs natively on Windows — it only mirrors content
+  directories onto an already-existing agent and touches none of the
+  reasons ADR-0007 excluded native Windows, so it isn't gated behind WSL2.
+  Don't read this exception as reopening ADR-0007 for anything else.
 - The USB approach is one Ventoy multi-boot drive with a persistent image,
   not a fleet of separately-flashed drives, per owner decision (ADR-0004).
 - Repo strategy is "thin wrapper," not literal fork-with-upstream-remote,

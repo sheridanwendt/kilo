@@ -2,13 +2,15 @@
 
 Drop your own `SKILL.md` files here (one directory per skill, following the
 `agentskills.io` open standard Hermes already speaks natively). These are
-copied into Hermes's skill search path (`~/.hermes/skills/custom/`) by
-`overlay/install/05-install-custom-skills.sh` during install, so they're
-available alongside the 40+ built-in skills and anything Hermes
-auto-creates. That target path is a best-effort assumption, **not yet
-confirmed on real hardware** — see `docs/open-questions.md` #11 before
-relying on it; a real instance's `skills/` folder was observed to contain
-only bundled category folders (`email`, `productivity`, etc.) plus
+copied into Hermes's skill search path (`<hermes-dir>/skills/custom/`,
+i.e. `~/.hermes/skills/custom/` on Linux/macOS or
+`%LOCALAPPDATA%\hermes\skills\custom\` on Windows) by `sync-to-hermes.sh`
+(bash) / `sync-to-hermes.ps1` (PowerShell) at the repo root — either as
+part of a full `install.sh` run, or standalone against an already-existing
+Hermes agent (see ADR-0014). That target path is a best-effort assumption,
+**not yet confirmed on real hardware** — see `docs/open-questions.md` #11
+before relying on it; a real instance's `skills/` folder was observed to
+contain only bundled category folders (`email`, `productivity`, etc.) plus
 `.hub`/manifest bookkeeping files, with no `custom/` folder present (that's
 consistent with nothing having been added yet, but also consistent with
 Hermes expecting a different registration mechanism entirely — unresolved).

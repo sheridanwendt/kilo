@@ -154,7 +154,7 @@ if [[ "$UPDATE_ONLY" == true ]]; then
   echo "==> Update mode: re-applying profile + pulling upstream Hermes updates"
   bash "$INSTALL_DIR/02-install-hermes.sh" --update
   bash "$INSTALL_DIR/03-apply-profile.sh"
-  bash "$INSTALL_DIR/05-install-custom-skills.sh"
+  "$SCRIPT_DIR/sync-to-hermes.sh" --hermes-dir "$HOME/.hermes" --yes
   echo "==> Update complete."
   exit 0
 fi
@@ -178,7 +178,7 @@ else
   echo "==> Step 5/6: Skipped (--skip-autostart)"
 fi
 
-echo "==> Step 6/6: Installing custom skills"
-bash "$INSTALL_DIR/05-install-custom-skills.sh"
+echo "==> Step 6/6: Syncing custom skills (and memories/cron/hooks, once populated)"
+"$SCRIPT_DIR/sync-to-hermes.sh" --hermes-dir "$HOME/.hermes" --yes
 
 echo "==> Done. Run 'hermes' to chat, or check 'systemctl status hermes-gateway ollama' for the running services."

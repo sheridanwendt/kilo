@@ -82,43 +82,64 @@ hardware.
 
 ## Unresolved
 
-### 11. `~/.hermes/skills/custom/` as the custom-skill target path — risk raised, still unresolved
+### 11. `skills/custom/` (and `memories/`, `cron/`, `hooks/`) as sync target paths — risk raised, still unresolved
 
-`overlay/install/05-install-custom-skills.sh` copies
-`overlay/skills/custom/<name>/` into `~/.hermes/skills/custom/<name>/`,
-assuming that's where Hermes's skill loader looks for user-supplied
-`SKILL.md` content (by analogy with `config.yaml` and skill memory already
-living under `~/.hermes/`).
+`sync-to-hermes.sh` / `sync-to-hermes.ps1` (see ADR-0014; formerly
+`overlay/install/05-install-custom-skills.sh`, now removed and folded into
+these) copy `overlay/skills/custom/<name>/` into
+`<hermes-dir>/skills/custom/<name>/`, and would mirror
+`overlay/{memories,cron,hooks}/` into `<hermes-dir>/{memories,cron,hooks}/`
+the same way if those ever get content. `<hermes-dir>` is
+`~/.hermes` on Linux/macOS/WSL2, `%LOCALAPPDATA%\hermes` on Windows. All of
+this assumes that's where Hermes's loaders actually look for user-supplied
+content (by analogy with `config.yaml` and skill memory already living
+under `~/.hermes/`) — none of the four category paths have been confirmed
+against a real Hermes instance.
 
 **New data point (2026-08-15, from the owner, not yet independently
 verified by a Claude instance):** a real Hermes instance's skills
 directory — `~/.hermes/skills/` on Linux, `%LOCALAPPDATA%\hermes\skills\`
-on Windows (native Windows is out of scope per ADR-0007/CLAUDE.md, so only
-the Linux path matters for `install.sh`, which only ever runs inside
-Linux/WSL2) — contains, by default: bundled category folders (`apple`,
-`autonomous-ai-agents`, `creative`, `email`, `github`, `media`, `mlops`,
-`note-taking`, `productivity`, `research`, `smart-home`, `social-media`,
-`software-development`), a hidden `.hub/` folder, and bookkeeping files
-`.bundled_manifest`, `.usage.json`, `.usage.json.lock` — but **no
-`custom/` folder**.
+on Windows (both now genuinely in scope: native Windows install
+provisioning is still out of scope per ADR-0007, but `sync-to-hermes.ps1`
+runs natively on Windows per ADR-0014's scoped exception, and needs the
+Windows path to be right) — contains, by default: bundled category folders
+(`apple`, `autonomous-ai-agents`, `creative`, `email`, `github`, `media`,
+`mlops`, `note-taking`, `productivity`, `research`, `smart-home`,
+`social-media`, `software-development`), a hidden `.hub/` folder, and
+bookkeeping files `.bundled_manifest`, `.usage.json`, `.usage.json.lock` —
+but **no `custom/` folder**, and (not asked about, so unknown) possibly no
+`memories/`, `cron/`, or `hooks/` folders either.
 
 This does not confirm or rule out the `custom/` assumption — it's
 consistent with nothing having been manually added to that particular
 instance yet, but the presence of `.bundled_manifest` and `.usage.json`
 also raises a real possibility this repo hadn't considered: Hermes may
 track installed skills in that manifest rather than (or in addition to)
-scanning the filesystem, in which case a raw `cp -r` into any folder —
+scanning the filesystem, in which case a raw copy into any folder —
 `custom/` or otherwise — might be silently invisible to the skill loader,
 or worse, might get treated as unmanaged content and pruned/flagged by a
 future `hermes update`. **Raising this from Medium to High risk** given
 that new information undermines confidence in the original assumption
-rather than confirming it.
+rather than confirming it. The same open question applies, with even less
+information, to whatever `memories/`, `cron/`, and `hooks/` turn out to
+mean to Hermes (do they even exist as directories today? are they
+manifest-tracked the same way?) — unknown until this repo actually has
+content to test them with.
+
+**Testing status**: `sync-to-hermes.sh` (bash) has been exercised against
+a mock Hermes directory in a Linux container — dry-run, real copy,
+idempotent re-run, and the missing-directory error path all behave as
+intended — but that only proves the *script* does what it says, not that
+Hermes recognizes the result. `sync-to-hermes.ps1` (PowerShell) has only
+been reviewed line-by-line against the bash version's logic, never
+executed — no `pwsh`/PowerShell runtime was available in the environment
+it was written in.
 
 **Action**: before trusting this mechanism for anything real,
-1. Run `overlay/install/05-install-custom-skills.sh` (or `install.sh`) on
-   a real instance and confirm Hermes actually surfaces the `inbox-triage`
-   skill — e.g. ask it something that should trigger the skill and see if
-   its behavior/reasoning reflects the policy card.
+1. Run `sync-to-hermes.sh` (Linux) and `sync-to-hermes.ps1` (Windows) each
+   on a real instance and confirm Hermes actually surfaces the
+   `inbox-triage` skill — e.g. ask it something that should trigger the
+   skill and see if its behavior/reasoning reflects the policy card.
 2. Check `hermes skill --help` (or equivalent) for a registration command
    (e.g. `hermes skill install <path>`) — if one exists, it's more likely
    the intended mechanism than a raw file copy, and `.bundled_manifest`
@@ -216,7 +237,7 @@ until then this is a theoretical concern, not yet exercised.
 | 8 | WSL2 autostart approach | not yet designed | Medium — same, no design yet |
 | 9 | Ventoy cross-hardware portability | `iso-usb/README.md` | High — core "device agnostic" requirement |
 | 10 | Thin-wrapper sufficiency long-term | ADR-0003 | Low near-term, unknown long-term |
-| 11 | `~/.hermes/skills/custom/` target path | `05-install-custom-skills.sh` | High — custom skills silently invisible to Hermes if wrong, and a raw copy may not be the right mechanism at all (manifest-based registration possible) |
+| 11 | `skills/custom/`, `memories/`, `cron/`, `hooks/` target paths (Linux + Windows) | `sync-to-hermes.sh` / `.ps1` | High — custom content silently invisible to Hermes if wrong, and a raw copy may not be the right mechanism at all (manifest-based registration possible); `.ps1` path additionally unexecuted |
 
 ## Future architectural decisions not yet made
 
